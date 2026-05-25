@@ -1,0 +1,17 @@
+{
+  "name": "GRE Vocab Coach",
+  "short_name": "GRE Vocab",
+  "description": "GRE vocabulary review with spaced repetition.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#020617",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

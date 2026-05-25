@@ -4,6 +4,7 @@ import type { Database } from "@/types/database";
 export type VocabularyRow = Database["public"]["Tables"]["vocabulary"]["Row"];
 export type UserProgressRow = Database["public"]["Tables"]["user_progress"]["Row"];
 export type ReviewLogRow = Database["public"]["Tables"]["review_logs"]["Row"];
+export type UserSettingsRow = Database["public"]["Tables"]["user_settings"]["Row"];
 
 export type ProgressWithWord = UserProgressRow & {
   vocabulary: VocabularyRow | null;
@@ -41,6 +42,9 @@ export type DashboardStats = {
   mistakeCount: number;
   reviewedTodayCount: number;
   newWordsCount: number;
+  dailyReviewLimit: number;
+  dailyNewWords: number;
+  completionPercent: number;
 };
 
 export async function getCurrentUser() {
@@ -56,6 +60,7 @@ export async function getDashboardStats(userId: string): Promise<DashboardStats>
   const supabase = await createClient();
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+  const settings = await getUserSettings(userId);
 
   const [
     dueResult,
@@ -100,8 +105,46 @@ export async function getDashboardStats(userId: string): Promise<DashboardStats>
     masteredCount: masteredResult.count ?? 0,
     mistakeCount: mistakesResult.count ?? 0,
     reviewedTodayCount: reviewedTodayResult.count ?? 0,
-    newWordsCount: Math.max(totalWords - trackedWords, 0)
+    newWordsCount: Math.max(totalWords - trackedWords, 0),
+    dailyReviewLimit: settings.daily_review_limit,
+    dailyNewWords: settings.daily_new_words,
+    completionPercent: Math.min(
+      100,
+      Math.round(((reviewedTodayResult.count ?? 0) / Math.max(settings.daily_review_limit, 1)) * 100)
+    )
   };
+}
+
+export async function getUserSettings(userId: string): Promise<UserSettingsRow> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("user_settings").select("*").eq("user_id", userId).maybeSingle();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  if (data) {
+    return data;
+  }
+
+  const defaults = {
+    user_id: userId,
+    daily_new_words: 20,
+    daily_review_limit: 100,
+    dark_mode: false
+  };
+
+  const { data: inserted, error: insertError } = await supabase
+    .from("user_settings")
+    .insert(defaults)
+    .select("*")
+    .single();
+
+  if (insertError) {
+    throw new Error(insertError.message);
+  }
+
+  return inserted;
 }
 
 export async function getDueReviewItems(userId: string, limit = 100): Promise<ReviewItem[]> {
@@ -142,12 +185,101 @@ export async function getDueReviewItems(userId: string, limit = 100): Promise<Re
   }));
 }
 
+export async function getTodayReviewQueue(userId: string): Promise<ReviewItem[]> {
+  const supabase = await createClient();
+  const settings = await getUserSettings(userId);
+  const dueItems = await getDueReviewItems(userId, settings.daily_review_limit);
+  const remainingSlots = Math.max(settings.daily_review_limit - dueItems.length, 0);
+
+  if (remainingSlots <= 0) {
+    return dueItems.sort((a, b) => b.wrong_count - a.wrong_count);
+  }
+
+  const newLimit = Math.min(settings.daily_new_words, remainingSlots);
+
+  if (newLimit <= 0) {
+    return dueItems.sort((a, b) => b.wrong_count - a.wrong_count);
+  }
+
+  const { data: existingProgress, error: progressError } = await supabase
+    .from("user_progress")
+    .select("word_id")
+    .eq("user_id", userId);
+
+  if (progressError) {
+    throw new Error(progressError.message);
+  }
+
+  const existingWordIds = new Set((existingProgress ?? []).map((row) => row.word_id));
+  const { data: vocabulary, error: vocabularyError } = await supabase
+    .from("vocabulary")
+    .select("*")
+    .order("frequency_level", { ascending: false })
+    .order("difficulty_level", { ascending: false })
+    .order("word", { ascending: true });
+
+  if (vocabularyError) {
+    throw new Error(vocabularyError.message);
+  }
+
+  const newWords = (vocabulary ?? []).filter((word) => !existingWordIds.has(word.id)).slice(0, newLimit);
+
+  if (!newWords.length) {
+    return dueItems.sort((a, b) => b.wrong_count - a.wrong_count);
+  }
+
+  const now = new Date().toISOString();
+  const progressRows = newWords.map((word) => ({
+    user_id: userId,
+    word_id: word.id,
+    familiarity_level: 0,
+    correct_count: 0,
+    wrong_count: 0,
+    next_review_at: now,
+    review_interval: 0,
+    is_mastered: false
+  }));
+
+  const { error: insertError } = await supabase.from("user_progress").insert(progressRows);
+
+  if (insertError) {
+    throw new Error(insertError.message);
+  }
+
+  const newItems: ReviewItem[] = newWords.map((word) => ({
+    word_id: word.id,
+    word: word.word,
+    part_of_speech: word.part_of_speech,
+    chinese_meaning: word.chinese_meaning,
+    english_definition: word.english_definition,
+    example_sentence: word.example_sentence,
+    synonyms: word.synonyms ?? [],
+    antonyms: word.antonyms ?? [],
+    memory_hint: word.memory_hint,
+    difficulty_level: word.difficulty_level,
+    frequency_level: word.frequency_level,
+    source_book_chapter: word.source_book_chapter,
+    familiarity_level: 0,
+    correct_count: 0,
+    wrong_count: 0,
+    last_reviewed_at: null,
+    next_review_at: now,
+    review_interval: 0,
+    is_starred: false,
+    is_mastered: false,
+    notes: null
+  }));
+
+  return [...dueItems, ...newItems].sort((a, b) => b.wrong_count - a.wrong_count);
+}
+
 export async function getVocabularyList(search?: string): Promise<VocabularyRow[]> {
   const supabase = await createClient();
   let query = supabase
     .from("vocabulary")
     .select("*")
-    .order("source_book_chapter", { ascending: true, nullsFirst: false })
+    .order("frequency_level", { ascending: false })
+    .order("difficulty_level", { ascending: false })
     .order("word", { ascending: true })
     .limit(300);
 
@@ -211,7 +343,7 @@ export async function getStats(userId: string) {
   const since = new Date();
   since.setDate(since.getDate() - 14);
 
-  const [dashboard, logsResult, progressResult] = await Promise.all([
+  const [dashboard, logsResult, progressResult, mistakesResult] = await Promise.all([
     getDashboardStats(userId),
     supabase
       .from("review_logs")
@@ -219,7 +351,14 @@ export async function getStats(userId: string) {
       .eq("user_id", userId)
       .gte("review_time", since.toISOString())
       .order("review_time", { ascending: false }),
-    supabase.from("user_progress").select("*").eq("user_id", userId)
+    supabase.from("user_progress").select("*").eq("user_id", userId),
+    supabase
+      .from("user_progress")
+      .select("*, vocabulary(*)")
+      .eq("user_id", userId)
+      .gt("wrong_count", 0)
+      .order("wrong_count", { ascending: false })
+      .limit(5)
   ]);
 
   if (logsResult.error) {
@@ -230,9 +369,14 @@ export async function getStats(userId: string) {
     throw new Error(progressResult.error.message);
   }
 
+  if (mistakesResult.error) {
+    throw new Error(mistakesResult.error.message);
+  }
+
   return {
     dashboard,
     recentLogs: logsResult.data ?? [],
-    progressRows: progressResult.data ?? []
+    progressRows: progressResult.data ?? [],
+    mostMissedWords: (mistakesResult.data ?? []) as ProgressWithWord[]
   };
 }

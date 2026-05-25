@@ -30,8 +30,8 @@ export default async function DashboardPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Due now" value={stats.dueCount} helper="Cards scheduled for review" />
         <StatCard label="Reviewed today" value={stats.reviewedTodayCount} helper="Completed review logs" />
+        <StatCard label="Completion" value={`${stats.completionPercent}%`} helper={`Daily target ${stats.dailyReviewLimit}`} />
         <StatCard label="Mistakes" value={stats.mistakeCount} helper="Words with wrong answers" />
-        <StatCard label="Mastered" value={stats.masteredCount} helper="Interval at least 30 days" />
       </div>
 
       <div className="mt-6 grid gap-4 lg:grid-cols-3">
@@ -46,6 +46,7 @@ export default async function DashboardPage() {
               <div className="rounded-md bg-slate-50 p-4">
                 <p className="text-sm text-slate-500">New words</p>
                 <p className="mt-2 text-2xl font-semibold">{stats.newWordsCount}</p>
+                <p className="mt-1 text-xs text-slate-500">Daily new target {stats.dailyNewWords}</p>
               </div>
               <div className="rounded-md bg-slate-50 p-4">
                 <p className="text-sm text-slate-500">Completion hint</p>

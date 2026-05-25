@@ -2,20 +2,23 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { LogoutButton } from "@/components/LogoutButton";
 import { getUser } from "@/lib/auth";
+import { getUserSettings } from "@/lib/data";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/review", label: "Review" },
   { href: "/vocabulary", label: "Vocabulary" },
   { href: "/mistakes", label: "Mistakes" },
-  { href: "/stats", label: "Stats" }
+  { href: "/stats", label: "Stats" },
+  { href: "/settings", label: "Settings" }
 ];
 
 export async function AppShell({ children }: { children: ReactNode }) {
   const user = await getUser();
+  const settings = user ? await getUserSettings(user.id) : null;
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-950">
+    <div className={`min-h-screen text-slate-950 ${settings?.dark_mode ? "dark bg-slate-950" : "bg-slate-50"}`}>
       <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <Link href={user ? "/dashboard" : "/login"} className="text-sm font-semibold">

@@ -1,4 +1,27 @@
-# Phase 2 改善建議
+# Phase 2 改善建議與目前狀態
+
+目前狀態更新：
+
+| 功能 | 狀態 |
+| --- | --- |
+| `/login` 登入頁 | Done |
+| CSV 匯入頁與 route | Done |
+| 自動建立 `user_progress` | Done |
+| Notes 編輯 | Done |
+| Review queue 混合新字 | Done |
+| Dashboard 完成率 | Done |
+| PWA manifest | Done |
+| Dark mode | Done |
+| 匯出 CSV | Done |
+| SRS / CSV parser 測試 | Done |
+
+仍可繼續改善：
+
+- Google Login
+- 更完整的深色模式細節
+- CSV 匯入預覽與錯誤列下載
+- 更細的統計圖表
+- 離線快取今日複習
 
 Phase 1 的核心是「能登入、能看到單字、能複習、能更新進度」。Phase 2 要讓它變成你真的願意每天打開的工具。
 

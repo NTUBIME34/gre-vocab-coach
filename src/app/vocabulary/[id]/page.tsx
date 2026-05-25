@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { FamiliarityBadge } from "@/components/familiarity-badge";
+import { NotesForm } from "@/components/NotesForm";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { WordFields } from "@/components/word-fields";
@@ -23,7 +24,7 @@ export default async function VocabularyDetailPage({
   return (
     <AppShell>
       <PageHeader
-        eyebrow={word.source_book_chapter ?? "Vocabulary"}
+        eyebrow="Vocabulary"
         title={word.word}
         description={word.part_of_speech ?? undefined}
       />
@@ -65,9 +66,7 @@ export default async function VocabularyDetailPage({
           <Card>
             <CardHeader title="Notes" />
             <CardBody>
-              <p className="whitespace-pre-wrap text-sm leading-6 text-slate-700">
-                {progress?.notes?.trim() || "No personal notes yet."}
-              </p>
+              <NotesForm wordId={word.id} initialNotes={progress?.notes ?? ""} />
             </CardBody>
           </Card>
         </div>

@@ -213,15 +213,16 @@ When interval reaches 30 days, the word is marked mastered.
 
 ## Current Limitations
 
-This project is still an MVP. The following are intentionally left for Phase 2:
+This project is still an MVP. Phase 2 basics are now implemented:
 
-- full `/login` page
+- `/login`
 - CSV import route
 - notes editing form
 - daily new-word queue
 - PWA manifest
 - dark mode
-- tests
+- CSV export
+- SRS and CSV parser tests
 
 See:
 
@@ -235,16 +236,14 @@ docs/PHASE_2.md
 npm run dev
 npm run typecheck
 npm run build
+npm run test
 ```
 
 ## Suggested Next Step
 
-Implement Phase 2 in this order:
+Suggested next improvements:
 
-1. `/login`
-2. CSV import route
-3. automatic `user_progress` creation
-4. notes editing
-5. improved review queue
-6. PWA manifest
-7. tests
+1. Google Login
+2. CSV import preview
+3. richer stats charts
+4. offline cache for today's review queue

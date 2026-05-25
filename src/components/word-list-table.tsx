@@ -11,7 +11,7 @@ export function VocabularyTable({ words }: { words: VocabularyRow[] }) {
             <th className="px-4 py-3 font-medium">Word</th>
             <th className="px-4 py-3 font-medium">Meaning</th>
             <th className="hidden px-4 py-3 font-medium sm:table-cell">POS</th>
-            <th className="hidden px-4 py-3 font-medium md:table-cell">Source</th>
+            <th className="hidden px-4 py-3 font-medium md:table-cell">Example</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">
@@ -23,7 +23,7 @@ export function VocabularyTable({ words }: { words: VocabularyRow[] }) {
               <td className="px-4 py-3 text-slate-600">{word.chinese_meaning}</td>
               <td className="hidden px-4 py-3 text-slate-500 sm:table-cell">{word.part_of_speech ?? "-"}</td>
               <td className="hidden px-4 py-3 text-slate-500 md:table-cell">
-                {word.source_book_chapter ?? "-"}
+                <span className="line-clamp-2">{word.example_sentence ?? "-"}</span>
               </td>
             </tr>
           ))}

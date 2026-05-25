@@ -3,7 +3,8 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "GRE Vocab Coach",
-  description: "A cloud-first GRE vocabulary spaced repetition tool."
+  description: "A cloud-first GRE vocabulary spaced repetition tool.",
+  manifest: "/manifest.webmanifest"
 };
 
 export default function RootLayout({
