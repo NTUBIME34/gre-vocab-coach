@@ -133,13 +133,21 @@ Seed files:
 | File | Purpose |
 | --- | --- |
 | `supabase/seed.sql` | Inserts 10 shared GRE vocabulary rows |
+| `supabase/seed_mason_combined.sql` | Inserts/updates the deduplicated Mason 1000 + Mason 2000 vocabulary |
 | `supabase/seed_user_progress.sql` | Creates progress rows for a specific Auth user |
 | `data/sample-vocabulary.csv` | Sample CSV for future import feature |
+| `data/mason-combined-vocabulary.csv` | Deduplicated Mason vocabulary CSV |
 
 Detailed guide:
 
 ```text
 docs/SEED_DATA.md
+```
+
+Mason import guide:
+
+```text
+docs/MASON_IMPORT.md
 ```
 
 ## Environment Variables
