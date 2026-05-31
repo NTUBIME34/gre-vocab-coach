@@ -83,6 +83,7 @@ export async function submitReviewAction(input: SubmitReviewInput) {
 
   revalidatePath("/dashboard");
   revalidatePath("/review");
+  revalidatePath("/practice");
   revalidatePath("/mistakes");
   revalidatePath("/stats");
   revalidatePath(`/words/${input.wordId}`);

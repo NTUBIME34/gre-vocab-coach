@@ -62,6 +62,12 @@ export default async function DashboardPage() {
             <ButtonLink href="/review" className="w-full">
               Review due cards
             </ButtonLink>
+            <ButtonLink href="/practice" variant="secondary" className="w-full">
+              Practice
+            </ButtonLink>
+            <ButtonLink href="/dictionary" variant="secondary" className="w-full">
+              Dictionary
+            </ButtonLink>
             <ButtonLink href="/mistakes" variant="secondary" className="w-full">
               Open mistakes
             </ButtonLink>

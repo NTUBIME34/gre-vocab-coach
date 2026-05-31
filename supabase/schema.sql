@@ -4,7 +4,15 @@
 create extension if not exists pgcrypto;
 
 create type public.review_rating as enum ('again', 'hard', 'good', 'easy');
-create type public.review_mode as enum ('flashcard', 'en_to_zh', 'zh_to_en', 'mistake_review');
+create type public.review_mode as enum (
+  'flashcard',
+  'en_to_zh',
+  'zh_to_en',
+  'mistake_review',
+  'practice_definition',
+  'practice_chinese',
+  'practice_cloze'
+);
 
 create table public.vocabulary (
   id uuid primary key default gen_random_uuid(),

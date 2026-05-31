@@ -7,7 +7,14 @@ export type Json =
   | Json[];
 
 export type ReviewRating = "again" | "hard" | "good" | "easy";
-export type ReviewMode = "flashcard" | "en_to_zh" | "zh_to_en" | "mistake_review";
+export type ReviewMode =
+  | "flashcard"
+  | "en_to_zh"
+  | "zh_to_en"
+  | "mistake_review"
+  | "practice_definition"
+  | "practice_chinese"
+  | "practice_cloze";
 
 export type Database = {
   public: {

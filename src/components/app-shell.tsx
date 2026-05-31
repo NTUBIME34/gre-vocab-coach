@@ -7,6 +7,8 @@ import { getUserSettings } from "@/lib/data";
 const navItems = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/review", label: "Review" },
+  { href: "/practice", label: "Practice" },
+  { href: "/dictionary", label: "Dictionary" },
   { href: "/vocabulary", label: "Vocabulary" },
   { href: "/mistakes", label: "Mistakes" },
   { href: "/stats", label: "Stats" },
