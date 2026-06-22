@@ -198,6 +198,23 @@ The important deployment steps are:
 4. Deploy.
 5. Update Supabase Auth Site URL and Redirect URLs.
 
+## Keep Supabase Awake
+
+This repo includes a GitHub Actions workflow that pings the Supabase `vocabulary` table every 3 days:
+
+```text
+.github/workflows/keep-supabase-awake.yml
+```
+
+Add these GitHub repository secrets before running it:
+
+| Secret | Value |
+| --- | --- |
+| `SUPABASE_URL` | Your Supabase project URL, for example `https://your-project-ref.supabase.co` |
+| `SUPABASE_ANON_KEY` | Your Supabase anon public key |
+
+In GitHub, go to `Settings` -> `Secrets and variables` -> `Actions` -> `New repository secret`.
+
 ## Spaced Repetition
 
 Core file:

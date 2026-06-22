@@ -1,0 +1,24 @@
+name: Keep Supabase Awake
+
+on:
+  schedule:
+    # Runs every 3 days at 00:00 UTC.
+    - cron: "0 0 */3 * *"
+  workflow_dispatch:
+
+jobs:
+  ping-supabase:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping vocabulary table
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          test -n "$SUPABASE_URL"
+          test -n "$SUPABASE_ANON_KEY"
+
+          curl --fail --show-error --silent \
+            "$SUPABASE_URL/rest/v1/vocabulary?select=id&limit=1" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY"
