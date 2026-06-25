@@ -214,6 +214,11 @@ export function PracticeShell() {
                       <span className="text-xs font-semibold text-slate-500">{optionIndex + 1}</span>
                       <span className="mt-2 block text-xl font-semibold text-slate-950">{option.word}</span>
                       <span className="mt-1 block text-sm text-slate-500">{option.partOfSpeech ?? "GRE word"}</span>
+                      {isAnswered ? (
+                        <span className="mt-3 block border-t border-slate-200 pt-3 text-sm leading-6 text-slate-700">
+                          {option.chineseMeaning}
+                        </span>
+                      ) : null}
                     </button>
                   );
                 })}
