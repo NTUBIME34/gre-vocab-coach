@@ -32,6 +32,7 @@ export type PracticeQuestion = {
 };
 
 type ProgressMap = Map<string, UserProgressRow>;
+const distractorCount = 4;
 
 export function buildPracticeQuestions({
   vocabulary,
@@ -180,7 +181,10 @@ function createOptions(answer: VocabularyRow, vocabulary: VocabularyRow[]) {
     (word) => word.id !== answer.id && word.part_of_speech && word.part_of_speech === answer.part_of_speech
   );
   const backup = vocabulary.filter((word) => word.id !== answer.id);
-  const distractors = shuffle(samePartOfSpeech.length >= 3 ? samePartOfSpeech : backup).slice(0, 3);
+  const distractors = shuffle(samePartOfSpeech.length >= distractorCount ? samePartOfSpeech : backup).slice(
+    0,
+    distractorCount
+  );
 
   return shuffle([answer, ...distractors]).map((word) => ({
     wordId: word.id,
