@@ -24,13 +24,27 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, message: parsed.errors.slice(0, 10).join("\n") }, { status: 400 });
   }
 
-  const { data: existingWords, error: existingError } = await supabase.from("vocabulary").select("id, word");
+  const existingWords: { id: string; word: string }[] = [];
+  const pageSize = 1000;
 
-  if (existingError) {
-    return NextResponse.json({ ok: false, message: existingError.message }, { status: 500 });
+  for (let from = 0; ; from += pageSize) {
+    const { data: page, error: existingError } = await supabase
+      .from("vocabulary")
+      .select("id, word")
+      .range(from, from + pageSize - 1);
+
+    if (existingError) {
+      return NextResponse.json({ ok: false, message: existingError.message }, { status: 500 });
+    }
+
+    existingWords.push(...(page ?? []));
+
+    if (!page || page.length < pageSize) {
+      break;
+    }
   }
 
-  const existingByWord = new Map((existingWords ?? []).map((word) => [normalizeWord(word.word), word.id]));
+  const existingByWord = new Map(existingWords.map((word) => [normalizeWord(word.word), word.id]));
   const seen = new Set<string>();
   const rowsToInsert = parsed.rows
     .filter((row) => {

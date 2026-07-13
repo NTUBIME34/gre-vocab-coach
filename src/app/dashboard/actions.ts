@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
+import { getAllVocabularyRows, getUserSettings } from "@/lib/data";
 import { createClient } from "@/lib/supabase/server";
 
 export async function initializeUserProgressAction() {
@@ -19,13 +20,14 @@ export async function initializeUserProgressAction() {
 
   const existingWordIds = new Set((existingProgress ?? []).map((row) => row.word_id));
 
-  const { data: vocabulary, error: vocabularyError } = await supabase.from("vocabulary").select("id");
-
-  if (vocabularyError) {
-    return { ok: false, message: vocabularyError.message };
+  let vocabulary;
+  try {
+    vocabulary = await getAllVocabularyRows();
+  } catch (error) {
+    return { ok: false, message: error instanceof Error ? error.message : "Failed to load vocabulary." };
   }
 
-  const rowsToInsert = (vocabulary ?? [])
+  const rowsToInsert = vocabulary
     .filter((word) => !existingWordIds.has(word.id))
     .map((word) => ({
       user_id: user.id,
@@ -48,12 +50,7 @@ export async function initializeUserProgressAction() {
     return { ok: false, message: insertError.message };
   }
 
-  await supabase.from("user_settings").upsert({
-    user_id: user.id,
-    daily_new_words: 20,
-    daily_review_limit: 100,
-    dark_mode: false
-  });
+  await getUserSettings(user.id);
 
   revalidatePath("/dashboard");
   revalidatePath("/review");

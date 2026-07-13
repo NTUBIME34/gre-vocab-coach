@@ -54,7 +54,8 @@ export async function submitReviewAction(input: SubmitReviewInput) {
     currentInterval: currentProgress.review_interval,
     correctCount: currentProgress.correct_count,
     wrongCount: currentProgress.wrong_count,
-    rating: input.rating
+    rating: input.rating,
+    recognitionOnly: input.reviewMode?.startsWith("practice_") ?? false
   });
 
   const updatePayload = buildUserProgressUpdate(nextReview);

@@ -4,16 +4,17 @@ import { useState, useTransition } from "react";
 import { initializeUserProgressAction } from "@/app/dashboard/actions";
 import { Button } from "@/components/ui/button";
 
-export function InitializeProgressButton() {
+export function InitializeProgressButton({ newWordsCount }: { newWordsCount: number }) {
   const [message, setMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   return (
     <div className="rounded-lg border border-amber-200 bg-amber-50 p-5">
-      <h2 className="text-base font-semibold text-amber-950">Initialize your vocabulary progress</h2>
+      <h2 className="text-base font-semibold text-amber-950">Add {newWordsCount} words to your review rotation</h2>
       <p className="mt-2 text-sm leading-6 text-amber-800">
-        Your account has no progress rows yet. Create one review row for each word in the vocabulary table so
-        Review can start scheduling cards for you.
+        {newWordsCount} word{newWordsCount === 1 ? "" : "s"} in the vocabulary bank (e.g. from a new import) do not
+        have a progress row yet, so Review and the daily new-word queue cannot schedule them. This creates one
+        review row for each, safe to run anytime new vocabulary is added.
       </p>
       <Button
         type="button"

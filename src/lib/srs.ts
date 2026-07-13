@@ -9,6 +9,13 @@ export type ReviewProgressInput = {
   rating: ReviewRating;
   reviewedAt?: Date;
   masteryIntervalDays?: number;
+  /**
+   * True for multiple-choice/cloze practice answers, where a correct answer only proves
+   * recognition among options (up to ~20-25% correct by chance alone), not free recall.
+   * Grows the interval more conservatively than a flashcard "good" so guesses can't fast-track
+   * a word to "mastered".
+   */
+  recognitionOnly?: boolean;
 };
 
 export type ReviewProgressResult = {
@@ -81,7 +88,9 @@ export function calculateNextReview(input: ReviewProgressInput): ReviewProgressR
   }
 
   if (input.rating === "good") {
-    const nextInterval = currentInterval <= 0 ? 3 : Math.max(3, Math.round(currentInterval * 2));
+    const floor = input.recognitionOnly ? 2 : 3;
+    const multiplier = input.recognitionOnly ? 1.5 : 2;
+    const nextInterval = currentInterval <= 0 ? floor : Math.max(floor, Math.round(currentInterval * multiplier));
 
     return {
       familiarityLevel: nextInterval >= masteryIntervalDays ? 5 : 3,

@@ -10,7 +10,7 @@ import { getDashboardStats } from "@/lib/data";
 export default async function DashboardPage() {
   const user = await requireUser();
   const stats = await getDashboardStats(user.id);
-  const shouldShowInitialize = stats.totalWords > 0 && stats.trackedWordsCount === 0;
+  const shouldShowInitialize = stats.newWordsCount > 0;
 
   return (
     <AppShell>
@@ -23,7 +23,7 @@ export default async function DashboardPage() {
 
       {shouldShowInitialize ? (
         <div className="mb-6">
-          <InitializeProgressButton />
+          <InitializeProgressButton newWordsCount={stats.newWordsCount} />
         </div>
       ) : null}
 

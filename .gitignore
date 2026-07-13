@@ -6,3 +6,6 @@ node_modules
 coverage
 dist
 *.tsbuildinfo
+
+# Copyrighted source book, kept locally only
+Mason 2000.pdf

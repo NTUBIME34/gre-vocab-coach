@@ -24,10 +24,10 @@ Current merge result:
 
 | Source | Rows |
 | --- | ---: |
-| Mason 1000 | 1077 |
-| Mason 2000 | 2053 |
-| Combined unique words | 2054 |
-| Duplicates removed | 1076 |
+| Mason 1000 | 1079 |
+| Mason 2000 | 2059 |
+| Combined unique words | 2060 |
+| Duplicates removed | 1078 |
 
 ## Merge Priority
 

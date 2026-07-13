@@ -185,6 +185,32 @@ export async function getDueReviewItems(userId: string, limit = 100): Promise<Re
   }));
 }
 
+export async function getAllVocabularyRows(): Promise<VocabularyRow[]> {
+  const supabase = await createClient();
+  const pageSize = 1000;
+  const rows: VocabularyRow[] = [];
+
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await supabase
+      .from("vocabulary")
+      .select("*")
+      .order("frequency_level", { ascending: false })
+      .order("difficulty_level", { ascending: false })
+      .order("word", { ascending: true })
+      .range(from, from + pageSize - 1);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    rows.push(...(data ?? []));
+
+    if (!data || data.length < pageSize) {
+      return rows;
+    }
+  }
+}
+
 export async function getTodayReviewQueue(userId: string): Promise<ReviewItem[]> {
   const supabase = await createClient();
   const settings = await getUserSettings(userId);
@@ -211,18 +237,8 @@ export async function getTodayReviewQueue(userId: string): Promise<ReviewItem[]>
   }
 
   const existingWordIds = new Set((existingProgress ?? []).map((row) => row.word_id));
-  const { data: vocabulary, error: vocabularyError } = await supabase
-    .from("vocabulary")
-    .select("*")
-    .order("frequency_level", { ascending: false })
-    .order("difficulty_level", { ascending: false })
-    .order("word", { ascending: true });
-
-  if (vocabularyError) {
-    throw new Error(vocabularyError.message);
-  }
-
-  const newWords = (vocabulary ?? []).filter((word) => !existingWordIds.has(word.id)).slice(0, newLimit);
+  const vocabulary = await getAllVocabularyRows();
+  const newWords = vocabulary.filter((word) => !existingWordIds.has(word.id)).slice(0, newLimit);
 
   if (!newWords.length) {
     return dueItems.sort((a, b) => b.wrong_count - a.wrong_count);

@@ -10,10 +10,25 @@ function escapeCsv(value: unknown) {
 export async function GET() {
   await requireUser();
   const supabase = await createClient();
-  const { data, error } = await supabase.from("vocabulary").select("*").order("word", { ascending: true });
+  const pageSize = 1000;
+  const data: Record<string, unknown>[] = [];
 
-  if (error) {
-    return NextResponse.json({ ok: false, message: error.message }, { status: 500 });
+  for (let from = 0; ; from += pageSize) {
+    const { data: page, error } = await supabase
+      .from("vocabulary")
+      .select("*")
+      .order("word", { ascending: true })
+      .range(from, from + pageSize - 1);
+
+    if (error) {
+      return NextResponse.json({ ok: false, message: error.message }, { status: 500 });
+    }
+
+    data.push(...(page ?? []));
+
+    if (!page || page.length < pageSize) {
+      break;
+    }
   }
 
   const headers = [

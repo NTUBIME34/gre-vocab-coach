@@ -71,4 +71,35 @@ describe("calculateNextReview", () => {
     expect(result.isMastered).toBe(true);
     expect(result.familiarityLevel).toBe(5);
   });
+
+  it("grows the interval more conservatively for recognition-only good answers", () => {
+    const result = calculateNextReview({
+      currentInterval: 4,
+      correctCount: 2,
+      wrongCount: 1,
+      rating: "good",
+      reviewedAt: baseDate,
+      recognitionOnly: true
+    });
+
+    expect(result.reviewInterval).toBe(6);
+    expect(result.correctCount).toBe(3);
+    expect(result.wrongCount).toBe(1);
+    expect(result.isMastered).toBe(false);
+  });
+
+  it("still counts a recognition-only good answer as correct, not a mistake", () => {
+    const result = calculateNextReview({
+      currentInterval: 0,
+      correctCount: 0,
+      wrongCount: 0,
+      rating: "good",
+      reviewedAt: baseDate,
+      recognitionOnly: true
+    });
+
+    expect(result.reviewInterval).toBe(2);
+    expect(result.correctCount).toBe(1);
+    expect(result.wrongCount).toBe(0);
+  });
 });
