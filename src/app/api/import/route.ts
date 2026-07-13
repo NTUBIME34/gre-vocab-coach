@@ -104,7 +104,9 @@ export async function POST(request: Request) {
     }));
 
   if (progressRows.length) {
-    const { error: progressInsertError } = await supabase.from("user_progress").insert(progressRows);
+    const { error: progressInsertError } = await supabase
+      .from("user_progress")
+      .upsert(progressRows, { onConflict: "user_id,word_id", ignoreDuplicates: true });
 
     if (progressInsertError) {
       return NextResponse.json({ ok: false, message: progressInsertError.message }, { status: 500 });

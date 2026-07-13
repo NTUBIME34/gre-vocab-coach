@@ -44,7 +44,9 @@ export async function initializeUserProgressAction() {
     return { ok: true, message: "Progress is already initialized." };
   }
 
-  const { error: insertError } = await supabase.from("user_progress").insert(rowsToInsert);
+  const { error: insertError } = await supabase
+    .from("user_progress")
+    .upsert(rowsToInsert, { onConflict: "user_id,word_id", ignoreDuplicates: true });
 
   if (insertError) {
     return { ok: false, message: insertError.message };

@@ -1,6 +1,7 @@
 import { AppShell } from "@/components/app-shell";
 import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
+import { ButtonLink } from "@/components/ui/button";
 import { VocabularyTable } from "@/components/word-list-table";
 import { requireUser } from "@/lib/auth";
 import { getVocabularyList } from "@/lib/data";
@@ -8,12 +9,25 @@ import { getVocabularyList } from "@/lib/data";
 export default async function VocabularyPage({
   searchParams
 }: {
-  searchParams?: Promise<{ q?: string }>;
+  searchParams?: Promise<{ q?: string; page?: string }>;
 }) {
   await requireUser();
   const resolvedSearchParams = await searchParams;
   const query = resolvedSearchParams?.q ?? "";
-  const words = await getVocabularyList(query);
+  const page = Number(resolvedSearchParams?.page ?? 1) || 1;
+  const { words, total, pageSize } = await getVocabularyList(query, page);
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const rangeStart = total ? (page - 1) * pageSize + 1 : 0;
+  const rangeEnd = Math.min(total, page * pageSize);
+
+  function pageHref(target: number) {
+    const params = new URLSearchParams();
+    if (query) {
+      params.set("q", query);
+    }
+    params.set("page", String(target));
+    return `/vocabulary?${params.toString()}`;
+  }
 
   return (
     <AppShell>
@@ -38,7 +52,33 @@ export default async function VocabularyPage({
       </form>
 
       {words.length ? (
-        <VocabularyTable words={words} />
+        <>
+          <div className="mb-3 flex items-center justify-between text-sm text-slate-500">
+            <span>
+              {rangeStart}-{rangeEnd} of {total} words
+            </span>
+            <span>
+              Page {page} of {totalPages}
+            </span>
+          </div>
+          <VocabularyTable words={words} />
+          <div className="mt-5 flex items-center justify-between">
+            {page > 1 ? (
+              <ButtonLink href={pageHref(page - 1)} variant="secondary">
+                Previous
+              </ButtonLink>
+            ) : (
+              <span />
+            )}
+            {page < totalPages ? (
+              <ButtonLink href={pageHref(page + 1)} variant="secondary">
+                Next
+              </ButtonLink>
+            ) : (
+              <span />
+            )}
+          </div>
+        </>
       ) : (
         <EmptyState
           title="No vocabulary found"

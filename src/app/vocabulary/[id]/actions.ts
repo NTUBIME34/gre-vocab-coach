@@ -8,25 +8,20 @@ export async function updateWordNotesAction(wordId: string, notes: string) {
   const user = await requireUser();
   const supabase = await createClient();
 
-  const { data: existing, error: readError } = await supabase
-    .from("user_progress")
-    .select("word_id")
-    .eq("user_id", user.id)
-    .eq("word_id", wordId)
-    .maybeSingle();
+  const { error: ensureRowError } = await supabase.from("user_progress").upsert(
+    {
+      user_id: user.id,
+      word_id: wordId,
+      next_review_at: new Date().toISOString()
+    },
+    { onConflict: "user_id,word_id", ignoreDuplicates: true }
+  );
 
-  if (readError) {
-    return { ok: false, message: readError.message };
+  if (ensureRowError) {
+    return { ok: false, message: ensureRowError.message };
   }
 
-  const { error } = existing
-    ? await supabase.from("user_progress").update({ notes }).eq("user_id", user.id).eq("word_id", wordId)
-    : await supabase.from("user_progress").insert({
-        user_id: user.id,
-        word_id: wordId,
-        notes,
-        next_review_at: new Date().toISOString()
-      });
+  const { error } = await supabase.from("user_progress").update({ notes }).eq("user_id", user.id).eq("word_id", wordId);
 
   if (error) {
     return { ok: false, message: error.message };

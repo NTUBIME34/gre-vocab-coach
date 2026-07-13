@@ -256,7 +256,9 @@ export async function getTodayReviewQueue(userId: string): Promise<ReviewItem[]>
     is_mastered: false
   }));
 
-  const { error: insertError } = await supabase.from("user_progress").insert(progressRows);
+  const { error: insertError } = await supabase
+    .from("user_progress")
+    .upsert(progressRows, { onConflict: "user_id,word_id", ignoreDuplicates: true });
 
   if (insertError) {
     throw new Error(insertError.message);
@@ -289,28 +291,39 @@ export async function getTodayReviewQueue(userId: string): Promise<ReviewItem[]>
   return [...dueItems, ...newItems].sort((a, b) => b.wrong_count - a.wrong_count);
 }
 
-export async function getVocabularyList(search?: string): Promise<VocabularyRow[]> {
+export type VocabularyListResult = {
+  words: VocabularyRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
+export async function getVocabularyList(search?: string, page = 1, pageSize = 100): Promise<VocabularyListResult> {
   const supabase = await createClient();
+  const safePage = Math.max(1, Math.floor(page) || 1);
+  const from = (safePage - 1) * pageSize;
+  const to = from + pageSize - 1;
+
   let query = supabase
     .from("vocabulary")
-    .select("*")
+    .select("*", { count: "exact" })
     .order("frequency_level", { ascending: false })
     .order("difficulty_level", { ascending: false })
     .order("word", { ascending: true })
-    .limit(300);
+    .range(from, to);
 
   if (search?.trim()) {
     const term = `%${search.trim()}%`;
     query = query.or(`word.ilike.${term},chinese_meaning.ilike.${term},english_definition.ilike.${term}`);
   }
 
-  const { data, error } = await query;
+  const { data, error, count } = await query;
 
   if (error) {
     throw new Error(error.message);
   }
 
-  return data ?? [];
+  return { words: data ?? [], total: count ?? 0, page: safePage, pageSize };
 }
 
 export async function getWordDetail(
