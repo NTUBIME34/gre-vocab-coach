@@ -12,6 +12,7 @@ const navItems = [
   { href: "/vocabulary", label: "Vocabulary" },
   { href: "/mistakes", label: "Mistakes" },
   { href: "/stats", label: "Stats" },
+  { href: "/guide", label: "Guide" },
   { href: "/settings", label: "Settings" }
 ];
 

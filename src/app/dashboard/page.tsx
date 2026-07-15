@@ -74,6 +74,9 @@ export default async function DashboardPage() {
             <ButtonLink href="/vocabulary" variant="secondary" className="w-full">
               Browse words
             </ButtonLink>
+            <ButtonLink href="/guide" variant="secondary" className="w-full">
+              使用指南
+            </ButtonLink>
           </CardBody>
         </Card>
       </div>
