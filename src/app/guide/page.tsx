@@ -68,14 +68,14 @@ export default function GuidePage() {
       <div className="space-y-6">
         <Card>
           <CardHeader title="為什麼這樣練最快" />
-          <CardBody className="space-y-3 text-sm leading-7 text-slate-700">
+          <CardBody className="space-y-3 text-sm leading-7 text-slate-700 dark:text-slate-300">
             <p>
               字庫的 2,060 個單字已依 GRE 出題頻率標成 1–5 級。頻率最高的兩級（tier 4+5）只有 541
               字，卻涵蓋考題中最常出現的核心字彙——先精通這 541 字，再往低頻層擴展，是投報率最高的順序。
             </p>
             <p>
-              訓練方法建立在兩個記憶科學原則上：<span className="font-medium text-slate-950">主動回想</span>
-              （看到字先自己想意思，再翻答案）與<span className="font-medium text-slate-950">間隔重複</span>
+              訓練方法建立在兩個記憶科學原則上：<span className="font-medium text-slate-950 dark:text-slate-50">主動回想</span>
+              （看到字先自己想意思，再翻答案）與<span className="font-medium text-slate-950 dark:text-slate-50">間隔重複</span>
               （在快忘記之前剛好再複習一次，間隔隨熟練度拉長）。Review 翻卡負責這兩件事；Practice
               的選擇題負責檢驗與辨析。兩者搭配，缺一不可。
             </p>
@@ -87,15 +87,15 @@ export default function GuidePage() {
           <CardBody>
             <div className="grid gap-4 md:grid-cols-2">
               {dailySteps.map((item) => (
-                <div key={item.step} className="rounded-lg border border-slate-200 p-5">
+                <div key={item.step} className="rounded-lg border border-slate-200 p-5 dark:border-slate-800">
                   <div className="flex items-center gap-3">
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-950 text-sm font-semibold text-white">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-950 text-sm font-semibold text-white dark:bg-slate-50 dark:text-slate-950">
                       {item.step}
                     </span>
-                    <h3 className="text-sm font-semibold text-slate-950">{item.title}</h3>
+                    <h3 className="text-sm font-semibold text-slate-950 dark:text-slate-50">{item.title}</h3>
                   </div>
-                  <p className="mt-3 text-sm leading-6 text-slate-600">{item.body}</p>
-                  <Link href={item.href} className="mt-3 inline-block text-sm font-medium text-slate-950 underline underline-offset-4">
+                  <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-400">{item.body}</p>
+                  <Link href={item.href} className="mt-3 inline-block text-sm font-medium text-slate-950 dark:text-slate-50 underline underline-offset-4">
                     {item.linkLabel}
                   </Link>
                 </div>
@@ -112,27 +112,27 @@ export default function GuidePage() {
           <CardBody className="space-y-4">
             <div className="overflow-x-auto">
               <table className="w-full border-collapse text-left text-sm">
-                <thead className="bg-slate-50 text-slate-500">
+                <thead className="bg-slate-50 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
                   <tr>
                     <th className="px-4 py-3 font-medium">評分</th>
                     <th className="px-4 py-3 font-medium">下次複習</th>
                     <th className="px-4 py-3 font-medium">什麼時候按</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {ratingRows.map((row) => (
                     <tr key={row.rating}>
-                      <td className="px-4 py-3 font-medium text-slate-950">{row.rating}</td>
-                      <td className="px-4 py-3 text-slate-600">{row.interval}</td>
-                      <td className="px-4 py-3 text-slate-600">{row.when}</td>
+                      <td className="px-4 py-3 font-medium text-slate-950 dark:text-slate-50">{row.rating}</td>
+                      <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{row.interval}</td>
+                      <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{row.when}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-            <ul className="list-disc space-y-2 pl-5 text-sm leading-6 text-slate-700">
+            <ul className="list-disc space-y-2 pl-5 text-sm leading-6 text-slate-700 dark:text-slate-300">
               <li>
-                <span className="font-medium text-slate-950">翻卡前想不起來的就按 Again。</span>
+                <span className="font-medium text-slate-950 dark:text-slate-50">翻卡前想不起來的就按 Again。</span>
                 騙過系統只會讓弱字更晚回來找你。選擇題矇對的也一樣算不會——下次這個字出現在翻卡時，記得誠實評分。
               </li>
               <li>複習間隔累積到 30 天，該字標記為 Mastered，之後幾乎不再佔用你的時間。</li>
@@ -149,17 +149,17 @@ export default function GuidePage() {
           <CardBody>
             <div className="overflow-x-auto">
               <table className="w-full border-collapse text-left text-sm">
-                <thead className="bg-slate-50 text-slate-500">
+                <thead className="bg-slate-50 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
                   <tr>
                     <th className="px-4 py-3 font-medium">功能</th>
                     <th className="px-4 py-3 font-medium">使用時機</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {featureRows.map((row) => (
                     <tr key={row.feature}>
-                      <td className="whitespace-nowrap px-4 py-3 font-medium text-slate-950">{row.feature}</td>
-                      <td className="px-4 py-3 text-slate-600">{row.when}</td>
+                      <td className="whitespace-nowrap px-4 py-3 font-medium text-slate-950 dark:text-slate-50">{row.feature}</td>
+                      <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{row.when}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -171,17 +171,17 @@ export default function GuidePage() {
         <Card>
           <CardHeader title="設定建議" description="在 Settings 依備考階段調整每日工作量。" />
           <CardBody>
-            <ul className="list-disc space-y-2 pl-5 text-sm leading-7 text-slate-700">
+            <ul className="list-disc space-y-2 pl-5 text-sm leading-7 text-slate-700 dark:text-slate-300">
               <li>
-                <span className="font-medium text-slate-950">預設值（每日 20 個新字、複習上限 100）</span>
+                <span className="font-medium text-slate-950 dark:text-slate-50">預設值（每日 20 個新字、複習上限 100）</span>
                 適合 3 個月以上的準備期。照這個節奏，541 個高頻字約一個月可以全部進入複習循環。
               </li>
               <li>
-                <span className="font-medium text-slate-950">衝刺期（考前 4–6 週）</span>
+                <span className="font-medium text-slate-950 dark:text-slate-50">衝刺期（考前 4–6 週）</span>
                 ：新字調到 30–40、複習上限調到 150–200，並把 Practice 時間集中在 Wrong 模式與 Synonym 題型。
               </li>
               <li>
-                <span className="font-medium text-slate-950">到期卡片爆量時</span>
+                <span className="font-medium text-slate-950 dark:text-slate-50">到期卡片爆量時</span>
                 ：先把新字暫時調到 0，專心清存量——累積的到期卡片比新字更重要。
               </li>
             </ul>

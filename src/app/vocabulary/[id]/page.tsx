@@ -44,7 +44,7 @@ export default async function VocabularyDetailPage({
               {progress ? (
                 <>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-500">Status</span>
+                    <span className="text-sm text-slate-500 dark:text-slate-400">Status</span>
                     <FamiliarityBadge level={progress.familiarity_level} />
                   </div>
                   <Metric label="Correct" value={progress.correct_count} />
@@ -56,7 +56,7 @@ export default async function VocabularyDetailPage({
                   />
                 </>
               ) : (
-                <p className="text-sm leading-6 text-slate-600">
+                <p className="text-sm leading-6 text-slate-600 dark:text-slate-400">
                   This word has no progress row yet. Initialize progress from Dashboard to include it in Review.
                 </p>
               )}
@@ -77,9 +77,9 @@ export default async function VocabularyDetailPage({
 
 function Metric({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="flex items-center justify-between border-t border-slate-100 pt-3">
-      <span className="text-sm text-slate-500">{label}</span>
-      <span className="text-sm font-medium text-slate-950">{value}</span>
+    <div className="flex items-center justify-between border-t border-slate-100 pt-3 dark:border-slate-800">
+      <span className="text-sm text-slate-500 dark:text-slate-400">{label}</span>
+      <span className="text-sm font-medium text-slate-950 dark:text-slate-50">{value}</span>
     </div>
   );
 }

@@ -137,7 +137,7 @@ export const getUserSettings = cache(async (userId: string): Promise<UserSetting
     user_id: userId,
     daily_new_words: 20,
     daily_review_limit: 100,
-    dark_mode: false
+    dark_mode: true
   };
 
   const { error: insertError } = await supabase

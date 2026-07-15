@@ -47,13 +47,13 @@ export default async function VocabularyPage({
           type="search"
           defaultValue={query}
           placeholder="Search word or meaning"
-          className="w-full rounded-md border border-slate-200 bg-white px-4 py-3 text-sm outline-none ring-slate-950 transition placeholder:text-slate-400 focus:ring-2"
+          className="w-full rounded-md border border-slate-200 bg-white px-4 py-3 text-sm outline-none ring-slate-950 transition placeholder:text-slate-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-50 dark:ring-slate-300 dark:placeholder:text-slate-500"
         />
       </form>
 
       {words.length ? (
         <>
-          <div className="mb-3 flex items-center justify-between text-sm text-slate-500">
+          <div className="mb-3 flex items-center justify-between text-sm text-slate-500 dark:text-slate-400">
             <span>
               {rangeStart}-{rangeEnd} of {total} words
             </span>

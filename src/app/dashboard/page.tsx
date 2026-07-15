@@ -39,17 +39,17 @@ export default async function DashboardPage() {
           <CardHeader title="Today&apos;s focus" description="A small queue is better than a heroic backlog." />
           <CardBody>
             <div className="grid gap-3 sm:grid-cols-3">
-              <div className="rounded-md bg-slate-50 p-4">
-                <p className="text-sm text-slate-500">Total words</p>
+              <div className="rounded-md bg-slate-50 p-4 dark:bg-slate-800">
+                <p className="text-sm text-slate-500 dark:text-slate-400">Total words</p>
                 <p className="mt-2 text-2xl font-semibold">{stats.totalWords}</p>
               </div>
-              <div className="rounded-md bg-slate-50 p-4">
-                <p className="text-sm text-slate-500">New words</p>
+              <div className="rounded-md bg-slate-50 p-4 dark:bg-slate-800">
+                <p className="text-sm text-slate-500 dark:text-slate-400">New words</p>
                 <p className="mt-2 text-2xl font-semibold">{stats.newWordsCount}</p>
-                <p className="mt-1 text-xs text-slate-500">Daily new target {stats.dailyNewWords}</p>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Daily new target {stats.dailyNewWords}</p>
               </div>
-              <div className="rounded-md bg-slate-50 p-4">
-                <p className="text-sm text-slate-500">Completion hint</p>
+              <div className="rounded-md bg-slate-50 p-4 dark:bg-slate-800">
+                <p className="text-sm text-slate-500 dark:text-slate-400">Completion hint</p>
                 <p className="mt-2 text-2xl font-semibold">{stats.dueCount === 0 ? "Clear" : "Review"}</p>
               </div>
             </div>

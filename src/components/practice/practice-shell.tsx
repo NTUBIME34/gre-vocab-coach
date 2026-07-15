@@ -115,14 +115,14 @@ export function PracticeShell() {
         <CardHeader title="Practice setup" description="Generate GRE-style multiple choice drills from your Supabase vocabulary." />
         <CardBody className="space-y-5">
           <div>
-            <label className="text-sm font-medium text-slate-700" htmlFor="practice-mode">
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300" htmlFor="practice-mode">
               Mode
             </label>
             <select
               id="practice-mode"
               value={mode}
               onChange={(event) => setMode(event.target.value as PracticeMode)}
-              className="mt-2 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm"
+              className="mt-2 w-full rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm dark:text-slate-50"
             >
               {modes.map((item) => (
                 <option key={item.value} value={item.value}>
@@ -130,11 +130,11 @@ export function PracticeShell() {
                 </option>
               ))}
             </select>
-            <p className="mt-2 text-xs text-slate-500">{modes.find((item) => item.value === mode)?.helper}</p>
+            <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{modes.find((item) => item.value === mode)?.helper}</p>
           </div>
 
           <div>
-            <p className="text-sm font-medium text-slate-700">Question type</p>
+            <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Question type</p>
             <div className="mt-2 grid grid-cols-2 gap-2">
               {questionTypes.map((item) => (
                 <button
@@ -143,8 +143,8 @@ export function PracticeShell() {
                   onClick={() => setQuestionType(item.value)}
                   className={`rounded-md border px-3 py-2 text-sm font-medium ${
                     questionType === item.value
-                      ? "border-slate-950 bg-slate-950 text-white"
-                      : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                      ? "border-slate-950 dark:border-slate-50 bg-slate-950 dark:bg-slate-50 text-white dark:text-slate-950"
+                      : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
                   }`}
                 >
                   {item.label}
@@ -154,7 +154,7 @@ export function PracticeShell() {
           </div>
 
           <div>
-            <label className="text-sm font-medium text-slate-700" htmlFor="question-count">
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300" htmlFor="question-count">
               Questions
             </label>
             <input
@@ -164,7 +164,7 @@ export function PracticeShell() {
               max={50}
               value={count}
               onChange={(event) => setCount(Number(event.target.value))}
-              className="mt-2 w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
+              className="mt-2 w-full rounded-md border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm dark:text-slate-50"
             />
           </div>
 
@@ -180,18 +180,18 @@ export function PracticeShell() {
           description={questions.length ? `${progressText} · Accuracy ${accuracy}%` : "Choose a mode and start a practice set."}
         />
         <CardBody>
-          {message ? <p className="mb-4 rounded-md bg-rose-50 px-4 py-3 text-sm text-rose-700">{message}</p> : null}
+          {message ? <p className="mb-4 rounded-md bg-rose-50 dark:bg-rose-950 px-4 py-3 text-sm text-rose-700 dark:text-rose-300">{message}</p> : null}
 
           {!questions.length ? (
-            <div className="rounded-lg border border-dashed border-slate-300 px-6 py-14 text-center">
-              <h2 className="text-lg font-semibold text-slate-950">No practice questions yet</h2>
-              <p className="mt-2 text-sm text-slate-600">Start a set to practice definitions, Chinese meanings, and examples.</p>
+            <div className="rounded-lg border border-dashed border-slate-300 dark:border-slate-700 px-6 py-14 text-center">
+              <h2 className="text-lg font-semibold text-slate-950 dark:text-slate-50">No practice questions yet</h2>
+              <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">Start a set to practice definitions, Chinese meanings, and examples.</p>
             </div>
           ) : current ? (
             <div>
-              <div className="rounded-lg bg-slate-50 p-5">
-                <p className="text-xs font-semibold uppercase tracking-normal text-slate-500">{current.type}</p>
-                <h2 className="mt-3 text-2xl font-semibold leading-9 text-slate-950">{current.prompt}</h2>
+              <div className="rounded-lg bg-slate-50 dark:bg-slate-800 p-5">
+                <p className="text-xs font-semibold uppercase tracking-normal text-slate-500 dark:text-slate-400">{current.type}</p>
+                <h2 className="mt-3 text-2xl font-semibold leading-9 text-slate-950 dark:text-slate-50">{current.prompt}</h2>
               </div>
 
               <div className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -200,10 +200,10 @@ export function PracticeShell() {
                   const isAnswer = option.wordId === current.wordId;
                   const stateClass =
                     isAnswered && isAnswer
-                      ? "border-emerald-500 bg-emerald-50"
+                      ? "border-emerald-500 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950"
                       : isAnswered && isSelected
-                        ? "border-rose-500 bg-rose-50"
-                        : "border-slate-200 bg-white hover:bg-slate-50";
+                        ? "border-rose-500 dark:border-rose-700 bg-rose-50 dark:bg-rose-950"
+                        : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800";
 
                   return (
                     <button
@@ -213,11 +213,11 @@ export function PracticeShell() {
                       onClick={() => answer(option.wordId)}
                       className={`min-h-28 rounded-lg border p-4 text-left transition ${stateClass}`}
                     >
-                      <span className="text-xs font-semibold text-slate-500">{optionIndex + 1}</span>
-                      <span className="mt-2 block text-xl font-semibold text-slate-950">{option.word}</span>
-                      <span className="mt-1 block text-sm text-slate-500">{option.partOfSpeech ?? "GRE word"}</span>
+                      <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">{optionIndex + 1}</span>
+                      <span className="mt-2 block text-xl font-semibold text-slate-950 dark:text-slate-50">{option.word}</span>
+                      <span className="mt-1 block text-sm text-slate-500 dark:text-slate-400">{option.partOfSpeech ?? "GRE word"}</span>
                       {isAnswered ? (
-                        <span className="mt-3 block border-t border-slate-200 pt-3 text-sm leading-6 text-slate-700">
+                        <span className="mt-3 block border-t border-slate-200 dark:border-slate-800 pt-3 text-sm leading-6 text-slate-700 dark:text-slate-300">
                           {option.chineseMeaning}
                         </span>
                       ) : null}
@@ -227,22 +227,22 @@ export function PracticeShell() {
               </div>
 
               {isAnswered ? (
-                <div className="mt-5 rounded-lg border border-slate-200 bg-white p-5">
-                  <p className={`text-sm font-semibold ${isCorrect ? "text-emerald-700" : "text-rose-700"}`}>
+                <div className="mt-5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
+                  <p className={`text-sm font-semibold ${isCorrect ? "text-emerald-700 dark:text-emerald-300" : "text-rose-700 dark:text-rose-300"}`}>
                     {isCorrect ? "Correct" : `Not quite. You chose ${selectedOption?.word ?? "another option"}.`}
                   </p>
-                  <h3 className="mt-3 text-2xl font-semibold text-slate-950">{current.explanation.word}</h3>
-                  <p className="mt-2 text-slate-700">{current.explanation.chineseMeaning}</p>
+                  <h3 className="mt-3 text-2xl font-semibold text-slate-950 dark:text-slate-50">{current.explanation.word}</h3>
+                  <p className="mt-2 text-slate-700 dark:text-slate-300">{current.explanation.chineseMeaning}</p>
                   {current.explanation.englishDefinition ? (
-                    <p className="mt-2 leading-7 text-slate-700">{current.explanation.englishDefinition}</p>
+                    <p className="mt-2 leading-7 text-slate-700 dark:text-slate-300">{current.explanation.englishDefinition}</p>
                   ) : null}
                   {current.explanation.exampleSentence ? (
-                    <p className="mt-3 rounded-md bg-slate-50 p-3 text-sm leading-6 text-slate-700">
+                    <p className="mt-3 rounded-md bg-slate-50 dark:bg-slate-800 p-3 text-sm leading-6 text-slate-700 dark:text-slate-300">
                       {current.explanation.exampleSentence}
                     </p>
                   ) : null}
                   {current.explanation.synonyms.length ? (
-                    <p className="mt-3 text-sm text-slate-500">Synonyms: {current.explanation.synonyms.join(", ")}</p>
+                    <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">Synonyms: {current.explanation.synonyms.join(", ")}</p>
                   ) : null}
                   <Button type="button" className="mt-5 w-full sm:w-auto" disabled={isSaving} onClick={nextQuestion}>
                     {index + 1 >= questions.length ? "Finish" : "Next question"}
@@ -251,9 +251,9 @@ export function PracticeShell() {
               ) : null}
             </div>
           ) : (
-            <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-6 py-12 text-center">
-              <h2 className="text-lg font-semibold text-emerald-950">Practice complete</h2>
-              <p className="mt-2 text-sm text-emerald-700">
+            <div className="rounded-lg border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950 px-6 py-12 text-center">
+              <h2 className="text-lg font-semibold text-emerald-950 dark:text-emerald-100">Practice complete</h2>
+              <p className="mt-2 text-sm text-emerald-700 dark:text-emerald-300">
                 You answered {correctCount} of {answeredWordIds.length} correctly. Review logs and progress are saved.
               </p>
               <Button type="button" className="mt-5" onClick={startSession}>

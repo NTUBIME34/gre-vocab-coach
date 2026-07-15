@@ -72,16 +72,16 @@ export default async function StatsPage() {
           <CardBody className="grid gap-3">
             {stats.mostMissedWords.length ? (
               stats.mostMissedWords.map((row) => (
-                <div key={row.word_id} className="flex items-center justify-between rounded-md bg-slate-50 px-4 py-3">
+                <div key={row.word_id} className="flex items-center justify-between rounded-md bg-slate-50 px-4 py-3 dark:bg-slate-800">
                   <div>
-                    <p className="text-sm font-semibold text-slate-950">{row.vocabulary?.word ?? row.word_id}</p>
-                    <p className="mt-1 text-sm text-slate-500">{row.vocabulary?.chinese_meaning ?? ""}</p>
+                    <p className="text-sm font-semibold text-slate-950 dark:text-slate-50">{row.vocabulary?.word ?? row.word_id}</p>
+                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{row.vocabulary?.chinese_meaning ?? ""}</p>
                   </div>
-                  <span className="text-sm font-medium text-slate-700">{row.wrong_count} wrong</span>
+                  <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{row.wrong_count} wrong</span>
                 </div>
               ))
             ) : (
-              <p className="text-sm text-slate-500">No mistakes yet.</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">No mistakes yet.</p>
             )}
           </CardBody>
         </Card>
@@ -96,11 +96,11 @@ function Bar({ label, value, total }: { label: string; value: number; total: num
   return (
     <div>
       <div className="mb-2 flex items-center justify-between text-sm">
-        <span className="font-medium text-slate-700">{label}</span>
-        <span className="text-slate-500">{value}</span>
+        <span className="font-medium text-slate-700 dark:text-slate-300">{label}</span>
+        <span className="text-slate-500 dark:text-slate-400">{value}</span>
       </div>
-      <div className="h-2 overflow-hidden rounded-full bg-slate-100">
-        <div className="h-full rounded-full bg-slate-950" style={{ width: `${percent}%` }} />
+      <div className="h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+        <div className="h-full rounded-full bg-slate-950 dark:bg-slate-50" style={{ width: `${percent}%` }} />
       </div>
     </div>
   );
@@ -108,9 +108,9 @@ function Bar({ label, value, total }: { label: string; value: number; total: num
 
 function Metric({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="flex items-center justify-between rounded-md bg-slate-50 px-4 py-3">
-      <span className="text-sm text-slate-500">{label}</span>
-      <span className="text-sm font-semibold text-slate-950">{value}</span>
+    <div className="flex items-center justify-between rounded-md bg-slate-50 px-4 py-3 dark:bg-slate-800">
+      <span className="text-sm text-slate-500 dark:text-slate-400">{label}</span>
+      <span className="text-sm font-semibold text-slate-950 dark:text-slate-50">{value}</span>
     </div>
   );
 }

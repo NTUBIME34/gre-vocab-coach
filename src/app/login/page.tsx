@@ -10,7 +10,9 @@ export default async function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-10 text-slate-950">
+    // Renders outside AppShell (no user session, so no theme setting to read):
+    // apply `dark` directly to match the logged-out default-dark theme.
+    <main className="dark flex min-h-screen items-center justify-center bg-slate-50 px-4 py-10 text-slate-950 dark:bg-slate-950 dark:text-slate-50">
       <AuthForm />
     </main>
   );

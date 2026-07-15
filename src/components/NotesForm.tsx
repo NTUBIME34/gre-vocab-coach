@@ -15,7 +15,7 @@ export function NotesForm({ wordId, initialNotes }: { wordId: string; initialNot
         value={notes}
         onChange={(event) => setNotes(event.target.value)}
         rows={6}
-        className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm leading-6 outline-none ring-slate-950 transition focus:ring-2"
+        className="w-full rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm leading-6 outline-none ring-slate-950 dark:ring-slate-300 transition focus:ring-2 dark:text-slate-50"
         placeholder="Add your memory hook, confusion note, or personal example..."
       />
       <div className="mt-3 flex items-center gap-3">
@@ -32,7 +32,7 @@ export function NotesForm({ wordId, initialNotes }: { wordId: string; initialNot
         >
           {isPending ? "Saving..." : "Save notes"}
         </Button>
-        {message ? <p className="text-sm text-slate-500">{message}</p> : null}
+        {message ? <p className="text-sm text-slate-500 dark:text-slate-400">{message}</p> : null}
       </div>
     </div>
   );

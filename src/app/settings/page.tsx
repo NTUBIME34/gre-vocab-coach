@@ -24,7 +24,7 @@ export default async function SettingsPage() {
           <CardHeader title="Daily review settings" />
           <CardBody>
             <form action={updateSettingsAction} className="grid gap-4">
-              <label className="grid gap-2 text-sm font-medium text-slate-700">
+              <label className="grid gap-2 text-sm font-medium text-slate-700 dark:text-slate-300">
                 Daily new words
                 <input
                   type="number"
@@ -32,10 +32,10 @@ export default async function SettingsPage() {
                   min={0}
                   max={200}
                   defaultValue={settings.daily_new_words}
-                  className="rounded-md border border-slate-200 px-3 py-2"
+                  className="rounded-md border border-slate-200 px-3 py-2 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-50"
                 />
               </label>
-              <label className="grid gap-2 text-sm font-medium text-slate-700">
+              <label className="grid gap-2 text-sm font-medium text-slate-700 dark:text-slate-300">
                 Daily review limit
                 <input
                   type="number"
@@ -43,10 +43,10 @@ export default async function SettingsPage() {
                   min={1}
                   max={500}
                   defaultValue={settings.daily_review_limit}
-                  className="rounded-md border border-slate-200 px-3 py-2"
+                  className="rounded-md border border-slate-200 px-3 py-2 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-50"
                 />
               </label>
-              <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+              <label className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300">
                 <input type="checkbox" name="dark_mode" defaultChecked={settings.dark_mode} />
                 Dark mode
               </label>
@@ -67,7 +67,7 @@ export default async function SettingsPage() {
           <CardBody>
             <a
               href="/api/export"
-              className="inline-flex rounded-md bg-slate-950 px-4 py-2 text-sm font-medium text-white"
+              className="inline-flex rounded-md bg-slate-950 px-4 py-2 text-sm font-medium text-white dark:bg-slate-50 dark:text-slate-950"
             >
               Export vocabulary CSV
             </a>

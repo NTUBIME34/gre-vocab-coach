@@ -34,9 +34,9 @@ export function ReviewSession({ items }: { items: ReviewItem[] }) {
 
   if (!sessionItems.length) {
     return (
-      <div className="rounded-lg border border-dashed border-slate-300 bg-white px-6 py-12 text-center">
-        <h2 className="text-lg font-semibold text-slate-950">No cards due right now</h2>
-        <p className="mt-2 text-sm text-slate-600">You are clear for the moment. New cards can be added later.</p>
+      <div className="rounded-lg border border-dashed border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-6 py-12 text-center">
+        <h2 className="text-lg font-semibold text-slate-950 dark:text-slate-50">No cards due right now</h2>
+        <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">You are clear for the moment. New cards can be added later.</p>
       </div>
     );
   }
@@ -44,9 +44,9 @@ export function ReviewSession({ items }: { items: ReviewItem[] }) {
   if (!current) {
     return (
       <div className="space-y-4">
-        <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-6 py-12 text-center">
-          <h2 className="text-lg font-semibold text-emerald-950">Review complete</h2>
-          <p className="mt-2 text-sm text-emerald-700">Nice. Today&apos;s due queue is done.</p>
+        <div className="rounded-lg border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950 px-6 py-12 text-center">
+          <h2 className="text-lg font-semibold text-emerald-950 dark:text-emerald-100">Review complete</h2>
+          <p className="mt-2 text-sm text-emerald-700 dark:text-emerald-300">Nice. Today&apos;s due queue is done.</p>
         </div>
         <SaveErrorList errors={saveErrors} />
       </div>
@@ -85,7 +85,7 @@ export function ReviewSession({ items }: { items: ReviewItem[] }) {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <div className="mb-4 flex items-center justify-between text-sm text-slate-500">
+      <div className="mb-4 flex items-center justify-between text-sm text-slate-500 dark:text-slate-400">
         <span>{progressText}</span>
         <FamiliarityBadge level={current.familiarity_level} />
       </div>
@@ -93,33 +93,33 @@ export function ReviewSession({ items }: { items: ReviewItem[] }) {
       <button
         type="button"
         onClick={() => setIsFlipped((value) => !value)}
-        className="min-h-[360px] w-full rounded-lg border border-slate-200 bg-white p-6 text-left shadow-sm transition hover:border-slate-300 sm:p-8"
+        className="min-h-[360px] w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 text-left shadow-sm transition hover:border-slate-300 dark:hover:border-slate-700 sm:p-8"
       >
         <div className="flex h-full min-h-[300px] flex-col justify-center">
-          <p className="text-sm font-medium text-slate-500">{current.part_of_speech ?? "GRE word"}</p>
-          <h2 className="mt-4 text-5xl font-semibold tracking-normal text-slate-950">{current.word}</h2>
+          <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{current.part_of_speech ?? "GRE word"}</p>
+          <h2 className="mt-4 text-5xl font-semibold tracking-normal text-slate-950 dark:text-slate-50">{current.word}</h2>
           {!isFlipped ? (
-            <p className="mt-8 text-sm text-slate-500">Tap to reveal meaning</p>
+            <p className="mt-8 text-sm text-slate-500 dark:text-slate-400">Tap to reveal meaning</p>
           ) : (
             <div className="mt-8 space-y-5">
               <div>
-                <p className="text-sm font-medium text-slate-500">Chinese</p>
-                <p className="mt-1 text-xl text-slate-950">{current.chinese_meaning}</p>
+                <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Chinese</p>
+                <p className="mt-1 text-xl text-slate-950 dark:text-slate-50">{current.chinese_meaning}</p>
               </div>
               {current.english_definition ? (
                 <div>
-                  <p className="text-sm font-medium text-slate-500">Definition</p>
-                  <p className="mt-1 leading-7 text-slate-800">{current.english_definition}</p>
+                  <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Definition</p>
+                  <p className="mt-1 leading-7 text-slate-800 dark:text-slate-200">{current.english_definition}</p>
                 </div>
               ) : null}
               {current.example_sentence ? (
                 <div>
-                  <p className="text-sm font-medium text-slate-500">Example</p>
-                  <p className="mt-1 leading-7 text-slate-800">{current.example_sentence}</p>
+                  <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Example</p>
+                  <p className="mt-1 leading-7 text-slate-800 dark:text-slate-200">{current.example_sentence}</p>
                 </div>
               ) : null}
               {current.synonyms.length ? (
-                <p className="text-sm text-slate-600">Synonyms: {current.synonyms.join(", ")}</p>
+                <p className="text-sm text-slate-600 dark:text-slate-400">Synonyms: {current.synonyms.join(", ")}</p>
               ) : null}
             </div>
           )}
@@ -130,7 +130,7 @@ export function ReviewSession({ items }: { items: ReviewItem[] }) {
         <SaveErrorList errors={saveErrors} />
       </div>
 
-      <div className="sticky bottom-0 mt-5 grid grid-cols-4 gap-2 bg-slate-50 py-3">
+      <div className="sticky bottom-0 mt-5 grid grid-cols-4 gap-2 bg-slate-50 dark:bg-slate-950 py-3">
         {ratingButtons.map((button) => (
           <Button
             key={button.rating}
@@ -155,7 +155,7 @@ function SaveErrorList({ errors }: { errors: string[] }) {
   }
 
   return (
-    <div className="rounded-md bg-rose-50 px-4 py-3 text-sm text-rose-700">
+    <div className="rounded-md bg-rose-50 dark:bg-rose-950 px-4 py-3 text-sm text-rose-700 dark:text-rose-300">
       <p className="font-medium">Some ratings could not be saved (the words stay due and will come back):</p>
       <ul className="mt-1 list-disc pl-5">
         {errors.map((error, errorIndex) => (

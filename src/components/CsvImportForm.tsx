@@ -36,12 +36,12 @@ export function CsvImportForm() {
         name="file"
         accept=".csv,text/csv"
         required
-        className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm"
+        className="w-full rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm dark:text-slate-50"
       />
       <Button type="submit" disabled={isSubmitting}>
         {isSubmitting ? "Importing..." : "Import CSV"}
       </Button>
-      {message ? <p className="whitespace-pre-wrap text-sm text-slate-600">{message}</p> : null}
+      {message ? <p className="whitespace-pre-wrap text-sm text-slate-600 dark:text-slate-400">{message}</p> : null}
     </form>
   );
 }

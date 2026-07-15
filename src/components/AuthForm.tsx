@@ -70,13 +70,13 @@ export function AuthForm() {
   }
 
   return (
-    <div className="w-full max-w-md rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+    <div className="w-full max-w-md rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm">
       <div className="mb-6">
-        <p className="text-sm font-medium text-slate-500">GRE Vocab Coach</p>
-        <h1 className="mt-2 text-2xl font-semibold tracking-normal text-slate-950">
+        <p className="text-sm font-medium text-slate-500 dark:text-slate-400">GRE Vocab Coach</p>
+        <h1 className="mt-2 text-2xl font-semibold tracking-normal text-slate-950 dark:text-slate-50">
           {mode === "login" ? "Sign in" : "Create account"}
         </h1>
-        <p className="mt-2 text-sm leading-6 text-slate-600">
+        <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
           {mode === "login"
             ? "Continue your GRE vocabulary review."
             : "Create an account to sync progress across devices."}
@@ -85,7 +85,7 @@ export function AuthForm() {
 
       <form onSubmit={handleSubmit} className="grid gap-4">
         <div>
-          <label htmlFor="email" className="text-sm font-medium text-slate-700">
+          <label htmlFor="email" className="text-sm font-medium text-slate-700 dark:text-slate-300">
             Email
           </label>
           <input
@@ -94,13 +94,13 @@ export function AuthForm() {
             autoComplete="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            className="mt-2 w-full rounded-md border border-slate-200 px-3 py-2 text-sm outline-none ring-slate-950 transition focus:ring-2"
+            className="mt-2 w-full rounded-md border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm outline-none ring-slate-950 dark:ring-slate-300 transition focus:ring-2 dark:text-slate-50"
             placeholder="you@example.com"
           />
         </div>
 
         <div>
-          <label htmlFor="password" className="text-sm font-medium text-slate-700">
+          <label htmlFor="password" className="text-sm font-medium text-slate-700 dark:text-slate-300">
             Password
           </label>
           <input
@@ -109,24 +109,24 @@ export function AuthForm() {
             autoComplete={mode === "login" ? "current-password" : "new-password"}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            className="mt-2 w-full rounded-md border border-slate-200 px-3 py-2 text-sm outline-none ring-slate-950 transition focus:ring-2"
+            className="mt-2 w-full rounded-md border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm outline-none ring-slate-950 dark:ring-slate-300 transition focus:ring-2 dark:text-slate-50"
             placeholder="At least 6 characters"
           />
         </div>
 
-        {error ? <p className="rounded-md bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p> : null}
-        {message ? <p className="rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{message}</p> : null}
+        {error ? <p className="rounded-md bg-rose-50 dark:bg-rose-950 px-3 py-2 text-sm text-rose-700 dark:text-rose-300">{error}</p> : null}
+        {message ? <p className="rounded-md bg-emerald-50 dark:bg-emerald-950 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-300">{message}</p> : null}
 
         <button
           type="submit"
           disabled={isSubmitting}
-          className="rounded-md bg-slate-950 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-md bg-slate-950 dark:bg-slate-50 px-4 py-2.5 text-sm font-medium text-white dark:text-slate-950 transition hover:bg-slate-800 dark:hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isSubmitting ? "Working..." : mode === "login" ? "Sign in" : "Sign up"}
         </button>
       </form>
 
-      <div className="mt-5 border-t border-slate-100 pt-5 text-center text-sm text-slate-600">
+      <div className="mt-5 border-t border-slate-100 dark:border-slate-800 pt-5 text-center text-sm text-slate-600 dark:text-slate-400">
         {mode === "login" ? "No account yet?" : "Already have an account?"}{" "}
         <button
           type="button"
@@ -135,7 +135,7 @@ export function AuthForm() {
             setError(null);
             setMessage(null);
           }}
-          className="font-medium text-slate-950 underline-offset-4 hover:underline"
+          className="font-medium text-slate-950 dark:text-slate-50 underline-offset-4 hover:underline"
         >
           {mode === "login" ? "Create one" : "Sign in"}
         </button>

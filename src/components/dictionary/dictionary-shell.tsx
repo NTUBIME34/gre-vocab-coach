@@ -72,7 +72,7 @@ export function DictionaryShell() {
         <CardHeader title="Dictionary" description="Search the GRE vocabulary bank stored in Supabase." />
         <CardBody>
           <form onSubmit={submit} className="space-y-3">
-            <label className="text-sm font-medium text-slate-700" htmlFor="dictionary-query">
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300" htmlFor="dictionary-query">
               Word or meaning
             </label>
             <input
@@ -80,7 +80,7 @@ export function DictionaryShell() {
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="abate, 減少, concise..."
-              className="w-full rounded-md border border-slate-200 px-3 py-3 text-sm"
+              className="w-full rounded-md border border-slate-200 dark:border-slate-700 px-3 py-3 text-sm dark:text-slate-50"
             />
             <Button type="submit" className="w-full" disabled={isPending}>
               {isPending ? "Searching..." : "Search"}
@@ -89,14 +89,14 @@ export function DictionaryShell() {
 
           {history.length ? (
             <div className="mt-6">
-              <p className="text-sm font-medium text-slate-700">Recent searches</p>
+              <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Recent searches</p>
               <div className="mt-2 flex flex-wrap gap-2">
                 {history.map((item) => (
                   <button
                     key={item}
                     type="button"
                     onClick={() => lookup(item)}
-                    className="rounded-md bg-slate-100 px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-200"
+                    className="rounded-md bg-slate-100 dark:bg-slate-800 px-2.5 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
                   >
                     {item}
                   </button>
@@ -108,15 +108,15 @@ export function DictionaryShell() {
       </Card>
 
       <div className="space-y-6">
-        {message ? <p className="rounded-md bg-rose-50 px-4 py-3 text-sm text-rose-700">{message}</p> : null}
+        {message ? <p className="rounded-md bg-rose-50 dark:bg-rose-950 px-4 py-3 text-sm text-rose-700 dark:text-rose-300">{message}</p> : null}
 
         {result ? (
           <DictionaryWordCard entry={result} title="Best match" />
         ) : (
           <Card>
             <CardBody className="px-6 py-12 text-center">
-              <h2 className="text-lg font-semibold text-slate-950">Search your GRE dictionary</h2>
-              <p className="mt-2 text-sm text-slate-600">
+              <h2 className="text-lg font-semibold text-slate-950 dark:text-slate-50">Search your GRE dictionary</h2>
+              <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
                 Results come from the same vocabulary table used by Review and Practice.
               </p>
             </CardBody>
@@ -131,18 +131,18 @@ export function DictionaryShell() {
                 <Link
                   key={entry.id}
                   href={`/vocabulary/${entry.id}`}
-                  className="rounded-lg border border-slate-200 p-4 transition hover:border-slate-300 hover:bg-slate-50"
+                  className="rounded-lg border border-slate-200 dark:border-slate-800 p-4 transition hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-lg font-semibold text-slate-950">{entry.word}</p>
-                      <p className="mt-1 text-sm text-slate-500">{entry.partOfSpeech ?? "GRE word"}</p>
+                      <p className="text-lg font-semibold text-slate-950 dark:text-slate-50">{entry.word}</p>
+                      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{entry.partOfSpeech ?? "GRE word"}</p>
                     </div>
-                    <span className="rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600">
+                    <span className="rounded-md bg-slate-100 dark:bg-slate-800 px-2 py-1 text-xs font-medium text-slate-600 dark:text-slate-400">
                       F{entry.frequencyLevel}
                     </span>
                   </div>
-                  <p className="mt-3 line-clamp-2 text-sm leading-6 text-slate-700">{entry.chineseMeaning}</p>
+                  <p className="mt-3 line-clamp-2 text-sm leading-6 text-slate-700 dark:text-slate-300">{entry.chineseMeaning}</p>
                 </Link>
               ))}
             </CardBody>
@@ -160,13 +160,13 @@ function DictionaryWordCard({ entry, title }: { entry: DictionaryEntry; title: s
         title={title}
         description={`${entry.partOfSpeech ?? "GRE word"} · Difficulty ${entry.difficultyLevel} · Frequency ${entry.frequencyLevel}`}
         action={
-          <Link href={`/vocabulary/${entry.id}`} className="text-sm font-medium text-slate-600 hover:text-slate-950">
+          <Link href={`/vocabulary/${entry.id}`} className="text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-950 dark:hover:text-slate-50">
             Detail
           </Link>
         }
       />
       <CardBody>
-        <h2 className="text-4xl font-semibold tracking-normal text-slate-950">{entry.word}</h2>
+        <h2 className="text-4xl font-semibold tracking-normal text-slate-950 dark:text-slate-50">{entry.word}</h2>
         <div className="mt-6 grid gap-5">
           <Field label="Chinese" value={entry.chineseMeaning} />
           <Field label="Definition" value={entry.englishDefinition} />
@@ -187,8 +187,8 @@ function Field({ label, value }: { label: string; value: string | null }) {
 
   return (
     <div>
-      <p className="text-sm font-medium text-slate-500">{label}</p>
-      <p className="mt-1 leading-7 text-slate-800">{value}</p>
+      <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{label}</p>
+      <p className="mt-1 leading-7 text-slate-800 dark:text-slate-200">{value}</p>
     </div>
   );
 }
