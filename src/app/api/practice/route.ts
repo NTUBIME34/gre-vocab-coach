@@ -3,8 +3,8 @@ import { buildPracticeQuestions, type PracticeMode, type PracticeQuestionType } 
 import { createClient } from "@/lib/supabase/server";
 import type { VocabularyRow } from "@/lib/data";
 
-const practiceModes = new Set<PracticeMode>(["smart", "wrong", "new", "all"]);
-const questionTypes = new Set<PracticeQuestionType>(["mixed", "definition", "chinese", "cloze"]);
+const practiceModes = new Set<PracticeMode>(["smart", "wrong", "new", "all", "target"]);
+const questionTypes = new Set<PracticeQuestionType>(["mixed", "definition", "chinese", "cloze", "synonym"]);
 
 export async function GET(request: Request) {
   const supabase = await createClient();

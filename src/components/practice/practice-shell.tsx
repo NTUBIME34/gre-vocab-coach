@@ -8,6 +8,7 @@ import type { PracticeMode, PracticeQuestion, PracticeQuestionType } from "@/lib
 
 const modes: { value: PracticeMode; label: string; helper: string }[] = [
   { value: "smart", label: "Smart", helper: "Due, weak, and high-value words" },
+  { value: "target", label: "Target", helper: "Highest-frequency tier first; unlocks the next tier once mastered" },
   { value: "wrong", label: "Wrong", helper: "Words you have missed before" },
   { value: "new", label: "New", helper: "Words not initialized in progress yet" },
   { value: "all", label: "All", helper: "Random from the vocabulary bank" }
@@ -17,7 +18,8 @@ const questionTypes: { value: PracticeQuestionType; label: string }[] = [
   { value: "mixed", label: "Mixed" },
   { value: "definition", label: "Definition" },
   { value: "chinese", label: "Chinese" },
-  { value: "cloze", label: "Cloze" }
+  { value: "cloze", label: "Cloze" },
+  { value: "synonym", label: "Synonym" }
 ];
 
 export function PracticeShell() {

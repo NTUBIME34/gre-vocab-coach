@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { parseVocabularyCsv, splitCsvList } from "@/lib/import/parse-vocabulary-csv";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 function normalizeWord(word: string) {
@@ -10,6 +11,10 @@ function normalizeWord(word: string) {
 export async function POST(request: Request) {
   const user = await requireUser();
   const supabase = await createClient();
+  // Writing to the shared `vocabulary` table is an admin-only operation (see
+  // supabase/20260715_restrict_vocabulary_insert.sql) -- user_progress below still
+  // goes through the RLS-scoped client since it's this user's own data.
+  const adminSupabase = createAdminClient();
   const formData = await request.formData();
   const file = formData.get("file");
 
@@ -28,7 +33,7 @@ export async function POST(request: Request) {
   const pageSize = 1000;
 
   for (let from = 0; ; from += pageSize) {
-    const { data: page, error: existingError } = await supabase
+    const { data: page, error: existingError } = await adminSupabase
       .from("vocabulary")
       .select("id, word")
       .range(from, from + pageSize - 1);
@@ -72,7 +77,7 @@ export async function POST(request: Request) {
   let insertedWordIds: string[] = [];
 
   if (rowsToInsert.length) {
-    const { data: inserted, error: insertError } = await supabase
+    const { data: inserted, error: insertError } = await adminSupabase
       .from("vocabulary")
       .insert(rowsToInsert)
       .select("id");

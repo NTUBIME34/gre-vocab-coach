@@ -113,12 +113,9 @@ on public.vocabulary for select
 to authenticated
 using (true);
 
--- Import is safest through a server route that uses the service role key.
--- For a personal MVP, this insert policy can be enabled temporarily if needed.
-create policy "Authenticated users can insert vocabulary"
-on public.vocabulary for insert
-to authenticated
-with check (true);
+-- No insert/update/delete policy for regular authenticated sessions: the shared
+-- vocabulary table is written only by CSV import (src/app/api/import/route.ts),
+-- which uses a server-only service-role client that bypasses RLS entirely.
 
 create policy "Users can read own settings"
 on public.user_settings for select
