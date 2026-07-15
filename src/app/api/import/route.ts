@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/auth";
 import { parseVocabularyCsv, splitCsvList } from "@/lib/import/parse-vocabulary-csv";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { invalidateVocabularyCache } from "@/lib/vocab-cache";
 
 function normalizeWord(word: string) {
   return word.trim().toLowerCase().replace(/\s+/g, " ");
@@ -87,6 +88,7 @@ export async function POST(request: Request) {
     }
 
     insertedWordIds = (inserted ?? []).map((row) => row.id);
+    invalidateVocabularyCache();
   }
 
   const allWordIds = [...existingByWord.values(), ...insertedWordIds];

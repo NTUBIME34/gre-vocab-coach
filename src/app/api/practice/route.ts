@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { buildPracticeQuestions, type PracticeMode, type PracticeQuestionType } from "@/lib/practice";
 import { createClient } from "@/lib/supabase/server";
-import type { VocabularyRow } from "@/lib/data";
+import { getVocabularyRowsCached } from "@/lib/vocab-cache";
 
 const practiceModes = new Set<PracticeMode>(["smart", "wrong", "new", "all", "target"]);
 const questionTypes = new Set<PracticeQuestionType>(["mixed", "definition", "chinese", "cloze", "synonym"]);
@@ -21,13 +21,18 @@ export async function GET(request: Request) {
   const questionType = parseQuestionType(url.searchParams.get("type"));
   const count = Number(url.searchParams.get("count") ?? 10);
 
-  const [vocabularyResult, progressResult] = await Promise.all([
-    getAllVocabulary(),
-    supabase.from("user_progress").select("*").eq("user_id", user.id)
-  ]);
-
-  if (!vocabularyResult.ok) {
-    return NextResponse.json({ ok: false, message: vocabularyResult.message }, { status: 500 });
+  let vocabulary;
+  let progressResult;
+  try {
+    [vocabulary, progressResult] = await Promise.all([
+      getVocabularyRowsCached(),
+      supabase.from("user_progress").select("*").eq("user_id", user.id)
+    ]);
+  } catch (error) {
+    return NextResponse.json(
+      { ok: false, message: error instanceof Error ? error.message : "Failed to load vocabulary." },
+      { status: 500 }
+    );
   }
 
   if (progressResult.error) {
@@ -35,7 +40,7 @@ export async function GET(request: Request) {
   }
 
   const questions = buildPracticeQuestions({
-    vocabulary: vocabularyResult.data,
+    vocabulary,
     progressRows: progressResult.data ?? [],
     mode,
     questionType,
@@ -51,30 +56,4 @@ function parsePracticeMode(value: string | null): PracticeMode {
 
 function parseQuestionType(value: string | null): PracticeQuestionType {
   return value && questionTypes.has(value as PracticeQuestionType) ? (value as PracticeQuestionType) : "mixed";
-}
-
-async function getAllVocabulary(): Promise<{ ok: true; data: VocabularyRow[] } | { ok: false; message: string }> {
-  const supabase = await createClient();
-  const pageSize = 1000;
-  const rows: VocabularyRow[] = [];
-
-  for (let from = 0; ; from += pageSize) {
-    const { data, error } = await supabase
-      .from("vocabulary")
-      .select("*")
-      .order("frequency_level", { ascending: false })
-      .order("difficulty_level", { ascending: false })
-      .order("word", { ascending: true })
-      .range(from, from + pageSize - 1);
-
-    if (error) {
-      return { ok: false, message: error.message };
-    }
-
-    rows.push(...((data ?? []) as VocabularyRow[]));
-
-    if (!data || data.length < pageSize) {
-      return { ok: true, data: rows };
-    }
-  }
 }

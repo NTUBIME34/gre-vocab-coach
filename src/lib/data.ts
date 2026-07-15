@@ -1,4 +1,6 @@
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
+import { getVocabularyRowsCached } from "@/lib/vocab-cache";
 import type { Database } from "@/types/database";
 
 export type VocabularyRow = Database["public"]["Tables"]["vocabulary"]["Row"];
@@ -115,7 +117,11 @@ export async function getDashboardStats(userId: string): Promise<DashboardStats>
   };
 }
 
-export async function getUserSettings(userId: string): Promise<UserSettingsRow> {
+// cache() dedupes within one request (AppShell + page + data helpers all need
+// settings). The insert path uses an ignore-duplicates upsert because two
+// concurrent first-visit requests could otherwise race on the primary key,
+// which surfaced as intermittent 500s for new users.
+export const getUserSettings = cache(async (userId: string): Promise<UserSettingsRow> => {
   const supabase = await createClient();
   const { data, error } = await supabase.from("user_settings").select("*").eq("user_id", userId).maybeSingle();
 
@@ -134,18 +140,26 @@ export async function getUserSettings(userId: string): Promise<UserSettingsRow> 
     dark_mode: false
   };
 
-  const { data: inserted, error: insertError } = await supabase
+  const { error: insertError } = await supabase
     .from("user_settings")
-    .insert(defaults)
-    .select("*")
-    .single();
+    .upsert(defaults, { onConflict: "user_id", ignoreDuplicates: true });
 
   if (insertError) {
     throw new Error(insertError.message);
   }
 
-  return inserted;
-}
+  const { data: inserted, error: refetchError } = await supabase
+    .from("user_settings")
+    .select("*")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (refetchError) {
+    throw new Error(refetchError.message);
+  }
+
+  return inserted ?? { ...defaults, created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+});
 
 export async function getDueReviewItems(userId: string, limit = 100): Promise<ReviewItem[]> {
   const supabase = await createClient();
@@ -237,7 +251,7 @@ export async function getTodayReviewQueue(userId: string): Promise<ReviewItem[]>
   }
 
   const existingWordIds = new Set((existingProgress ?? []).map((row) => row.word_id));
-  const vocabulary = await getAllVocabularyRows();
+  const vocabulary = await getVocabularyRowsCached();
   const newWords = vocabulary.filter((word) => !existingWordIds.has(word.id)).slice(0, newLimit);
 
   if (!newWords.length) {

@@ -1,14 +1,17 @@
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
-export async function getUser() {
+// cache() dedupes within one request: AppShell and the page both call this,
+// which previously meant two Supabase Auth round trips per page view.
+export const getUser = cache(async () => {
   const supabase = await createClient();
   const {
     data: { user }
   } = await supabase.auth.getUser();
 
   return user;
-}
+});
 
 export async function requireUser() {
   const user = await getUser();

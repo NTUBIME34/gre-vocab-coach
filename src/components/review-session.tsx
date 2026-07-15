@@ -15,16 +15,24 @@ const ratingButtons: { rating: ReviewRating; label: string; helper: string; vari
 ];
 
 export function ReviewSession({ items }: { items: ReviewItem[] }) {
+  // Snapshot the queue once: the session works through a fixed list, so server
+  // re-renders can never reorder or swap the card the user is currently rating.
+  const [sessionItems] = useState(items);
   const [index, setIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [startedAt, setStartedAt] = useState(() => Date.now());
-  const [message, setMessage] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
+  // Accumulated, never auto-cleared: with optimistic advance a failure can land
+  // after the user has moved on (or finished), so every failure stays visible.
+  const [saveErrors, setSaveErrors] = useState<string[]>([]);
+  const [, startTransition] = useTransition();
 
-  const current = items[index];
-  const progressText = useMemo(() => `${Math.min(index + 1, items.length)} / ${items.length}`, [index, items.length]);
+  const current = sessionItems[index];
+  const progressText = useMemo(
+    () => `${Math.min(index + 1, sessionItems.length)} / ${sessionItems.length}`,
+    [index, sessionItems.length]
+  );
 
-  if (!items.length) {
+  if (!sessionItems.length) {
     return (
       <div className="rounded-lg border border-dashed border-slate-300 bg-white px-6 py-12 text-center">
         <h2 className="text-lg font-semibold text-slate-950">No cards due right now</h2>
@@ -35,9 +43,12 @@ export function ReviewSession({ items }: { items: ReviewItem[] }) {
 
   if (!current) {
     return (
-      <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-6 py-12 text-center">
-        <h2 className="text-lg font-semibold text-emerald-950">Review complete</h2>
-        <p className="mt-2 text-sm text-emerald-700">Nice. Today&apos;s due queue is done.</p>
+      <div className="space-y-4">
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-6 py-12 text-center">
+          <h2 className="text-lg font-semibold text-emerald-950">Review complete</h2>
+          <p className="mt-2 text-sm text-emerald-700">Nice. Today&apos;s due queue is done.</p>
+        </div>
+        <SaveErrorList errors={saveErrors} />
       </div>
     );
   }
@@ -47,24 +58,28 @@ export function ReviewSession({ items }: { items: ReviewItem[] }) {
       return;
     }
 
+    const ratedWordId = current.word_id;
+    const ratedWord = current.word;
     const responseTime = Date.now() - startedAt;
-    setMessage(null);
+
+    // Advance immediately; the rating for the card just shown saves in the
+    // background. A failed save is reported (with the word) but not retried --
+    // the word's schedule was never updated, so it stays due and comes back.
+    setIndex((value) => value + 1);
+    setIsFlipped(false);
+    setStartedAt(Date.now());
+
     startTransition(async () => {
       const result = await submitReviewAction({
-        wordId: current.word_id,
+        wordId: ratedWordId,
         rating,
         reviewMode: "flashcard",
         responseTime
       });
 
       if (!result.ok) {
-        setMessage(result.message);
-        return;
+        setSaveErrors((previous) => [...previous, `"${ratedWord}": ${result.message}`]);
       }
-
-      setIndex((value) => value + 1);
-      setIsFlipped(false);
-      setStartedAt(Date.now());
     });
   }
 
@@ -111,7 +126,9 @@ export function ReviewSession({ items }: { items: ReviewItem[] }) {
         </div>
       </button>
 
-      {message ? <p className="mt-4 rounded-md bg-rose-50 px-4 py-3 text-sm text-rose-700">{message}</p> : null}
+      <div className="mt-4">
+        <SaveErrorList errors={saveErrors} />
+      </div>
 
       <div className="sticky bottom-0 mt-5 grid grid-cols-4 gap-2 bg-slate-50 py-3">
         {ratingButtons.map((button) => (
@@ -119,7 +136,7 @@ export function ReviewSession({ items }: { items: ReviewItem[] }) {
             key={button.rating}
             type="button"
             variant={button.variant}
-            disabled={isPending || !isFlipped}
+            disabled={!isFlipped}
             onClick={() => submit(button.rating)}
             className="flex-col gap-1 px-2 py-3"
           >
@@ -128,6 +145,23 @@ export function ReviewSession({ items }: { items: ReviewItem[] }) {
           </Button>
         ))}
       </div>
+    </div>
+  );
+}
+
+function SaveErrorList({ errors }: { errors: string[] }) {
+  if (!errors.length) {
+    return null;
+  }
+
+  return (
+    <div className="rounded-md bg-rose-50 px-4 py-3 text-sm text-rose-700">
+      <p className="font-medium">Some ratings could not be saved (the words stay due and will come back):</p>
+      <ul className="mt-1 list-disc pl-5">
+        {errors.map((error, errorIndex) => (
+          <li key={errorIndex}>{error}</li>
+        ))}
+      </ul>
     </div>
   );
 }

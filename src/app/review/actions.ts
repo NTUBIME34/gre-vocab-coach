@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { buildUserProgressUpdate, calculateNextReview } from "@/lib/srs";
 import { createClient } from "@/lib/supabase/server";
 import type { ReviewMode, ReviewRating } from "@/types/database";
@@ -82,12 +81,10 @@ export async function submitReviewAction(input: SubmitReviewInput) {
     return { ok: false, message: logError.message };
   }
 
-  revalidatePath("/dashboard");
-  revalidatePath("/review");
-  revalidatePath("/practice");
-  revalidatePath("/mistakes");
-  revalidatePath("/stats");
-  revalidatePath(`/words/${input.wordId}`);
+  // No revalidatePath here: every page reading this data is dynamic (cookie-based
+  // auth), so navigation always refetches. Revalidating mid-session pushed a
+  // re-sorted review queue into the open ReviewSession and swapped the visible
+  // card out from under the user.
 
   return { ok: true, message: "Review saved." };
 }
