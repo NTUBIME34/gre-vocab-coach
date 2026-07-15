@@ -51,7 +51,7 @@ describe("buildPracticeQuestions synonym type", () => {
       progressRows: [],
       mode: "all",
       questionType: "synonym",
-      count: 5
+      count: 10
     });
 
     const laconicQuestion = questions.find((q) => q.prompt.includes("laconic"));
@@ -70,7 +70,7 @@ describe("buildPracticeQuestions synonym type", () => {
       progressRows: [],
       mode: "all",
       questionType: "synonym",
-      count: 5
+      count: 10
     });
 
     const soloQuestion = questions.find((q) => q.wordId === "1" || q.answerWord === "solo");
@@ -88,7 +88,7 @@ describe("buildPracticeQuestions synonym type", () => {
       progressRows: [],
       mode: "all",
       questionType: "synonym",
-      count: 5
+      count: 10
     });
 
     expect(questions.some((q) => q.type === "synonym")).toBe(true);
@@ -132,14 +132,16 @@ describe("buildPracticeQuestions target mode", () => {
   });
 
   it("prioritizes unmastered words within the unlocked tier over already-mastered ones", () => {
-    const weak = makeWord({ id: "weak", word: "weak", frequency_level: 5 });
-    const mastered = makeWord({ id: "mastered", word: "mastered", frequency_level: 5 });
-    // A third tier-5 word keeps the tier "not fully mastered" so it stays the active tier.
-    const untouched = makeWord({ id: "untouched", word: "untouched", frequency_level: 5 });
-    const vocabulary = [weak, mastered, untouched];
+    // Selection (not display order) carries the priority: with 5 weak + 20 mastered
+    // tier-5 words and count=5, the 5 selected questions must all be weak words.
+    const weakWords = [1, 2, 3, 4, 5].map((n) => makeWord({ id: `weak-${n}`, word: `weak${n}`, frequency_level: 5 }));
+    const masteredWords = Array.from({ length: 20 }, (_, i) =>
+      makeWord({ id: `mastered-${i}`, word: `mastered${i}`, frequency_level: 5 })
+    );
+    const vocabulary = [...weakWords, ...masteredWords];
     const progressRows: UserProgressRow[] = [
-      makeProgress({ word_id: "weak", familiarity_level: 1, wrong_count: 2 }),
-      makeProgress({ word_id: "mastered", familiarity_level: 3 })
+      ...weakWords.map((w) => makeProgress({ word_id: w.id, familiarity_level: 1, wrong_count: 2 })),
+      ...masteredWords.map((w) => makeProgress({ word_id: w.id, familiarity_level: 3 }))
     ];
 
     const questions = buildPracticeQuestions({
@@ -147,10 +149,10 @@ describe("buildPracticeQuestions target mode", () => {
       progressRows,
       mode: "target",
       questionType: "definition",
-      count: 20
+      count: 5
     });
 
-    const order = questions.map((q) => q.wordId);
-    expect(order.indexOf("weak")).toBeLessThan(order.indexOf("mastered"));
+    expect(questions).toHaveLength(5);
+    expect(questions.every((q) => q.wordId.startsWith("weak-"))).toBe(true);
   });
 });
