@@ -48,6 +48,7 @@ const featureRows = [
   { feature: "Practice → Synonym", when: "有一定字量後：練 GRE 真正考的同義詞辨析" },
   { feature: "Practice → Wrong", when: "每天收尾或考前衝刺：只打弱點" },
   { feature: "Practice → Smart", when: "時間零碎時：混合到期、易錯、高價值字的綜合複習" },
+  { feature: "Game", when: "想換口味時：配對消除當熱身；限時衝刺答題會計入學習紀錄" },
   { feature: "Mistakes", when: "瀏覽錯題排行，找出反覆記不住的字" },
   { feature: "Dictionary", when: "閱讀時遇到生字，隨手查字庫內的解釋與例句" },
   { feature: "Vocabulary", when: "瀏覽或搜尋整個字庫，點進單字頁可寫個人筆記" },

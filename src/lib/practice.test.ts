@@ -185,4 +185,76 @@ describe("buildPracticeQuestions smart mode", () => {
 
     expect(questions.some((q) => q.wordId === "mastered-due")).toBe(true);
   });
+
+  it("rotates out words answered correctly earlier today once they are no longer due", () => {
+    // Words the user just practiced (reviewed 1h ago, next review pushed out)
+    // must lose to fresh due words, even if they carry old mistakes.
+    const recentIds = [1, 2, 3, 4, 5].map((n) => `recent-${n}`);
+    const recentWords = recentIds.map((id, i) => makeWord({ id, word: `recent${i}`, frequency_level: 5 }));
+    const dueWords = [1, 2, 3, 4, 5].map((n) => makeWord({ id: `due-${n}`, word: `due${n}`, frequency_level: 3 }));
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const progressRows: UserProgressRow[] = [
+      ...recentIds.map((id) =>
+        makeProgress({
+          word_id: id,
+          wrong_count: 3,
+          correct_count: 5,
+          familiarity_level: 3,
+          last_reviewed_at: oneHourAgo,
+          next_review_at: "2099-01-01T00:00:00.000Z"
+        })
+      ),
+      ...dueWords.map((w) => makeProgress({ word_id: w.id, familiarity_level: 0 }))
+    ];
+
+    const questions = buildPracticeQuestions({
+      vocabulary: [...recentWords, ...dueWords],
+      progressRows,
+      mode: "smart",
+      questionType: "definition",
+      count: 5
+    });
+
+    expect(questions).toHaveLength(5);
+    expect(questions.every((q) => q.wordId.startsWith("due-"))).toBe(true);
+  });
+
+  it("lets correct answers cancel out old mistakes in the ranking", () => {
+    // wrong_count 4 but correct_count 6 => net mistakes 0: the relearned word
+    // must rank below words whose mistakes are still uncorrected.
+    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+    const relearned = makeWord({ id: "relearned", word: "relearned", frequency_level: 3 });
+    const stillWeak = [1, 2, 3, 4, 5].map((n) => makeWord({ id: `weak-${n}`, word: `weak${n}`, frequency_level: 3 }));
+    const progressRows: UserProgressRow[] = [
+      makeProgress({
+        word_id: "relearned",
+        wrong_count: 4,
+        correct_count: 6,
+        familiarity_level: 3,
+        last_reviewed_at: threeDaysAgo,
+        next_review_at: "2099-01-01T00:00:00.000Z"
+      }),
+      ...stillWeak.map((w) =>
+        makeProgress({
+          word_id: w.id,
+          wrong_count: 4,
+          correct_count: 1,
+          familiarity_level: 1,
+          last_reviewed_at: threeDaysAgo,
+          next_review_at: "2099-01-01T00:00:00.000Z"
+        })
+      )
+    ];
+
+    const questions = buildPracticeQuestions({
+      vocabulary: [relearned, ...stillWeak],
+      progressRows,
+      mode: "smart",
+      questionType: "definition",
+      count: 5
+    });
+
+    expect(questions).toHaveLength(5);
+    expect(questions.every((q) => q.wordId.startsWith("weak-"))).toBe(true);
+  });
 });

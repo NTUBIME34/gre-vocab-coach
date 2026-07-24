@@ -84,7 +84,13 @@ function selectPracticePool(
   }
 
   if (mode === "smart") {
-    return [...vocabulary].sort((a, b) => scoreWord(b, progressByWordId, now) - scoreWord(a, progressByWordId, now));
+    // A small random jitter breaks ties between equally-scored words so
+    // back-to-back sessions don't serve an identical set; real priority gaps
+    // (due bonus 80, cooldown penalty 60) dwarf it.
+    return [...vocabulary]
+      .map((word) => ({ word, score: scoreWord(word, progressByWordId, now) + Math.random() * 8 }))
+      .sort((a, b) => b.score - a.score)
+      .map((entry) => entry.word);
   }
 
   if (mode === "target") {
@@ -132,6 +138,8 @@ function targetScore(word: VocabularyRow, progressByWordId: ProgressMap) {
   return word.frequency_level;
 }
 
+const RECENT_REVIEW_COOLDOWN_MS = 12 * 60 * 60 * 1000;
+
 function scoreWord(word: VocabularyRow, progressByWordId: ProgressMap, now: number) {
   const progress = progressByWordId.get(word.id);
 
@@ -141,12 +149,23 @@ function scoreWord(word: VocabularyRow, progressByWordId: ProgressMap, now: numb
 
   // Mastered words still earn the due bonus when their (long) interval lapses:
   // spaced repetition never retires a card, it just sees it less often.
-  const dueBonus = new Date(progress.next_review_at).getTime() <= now ? 80 : 0;
-  const mistakeBonus = progress.wrong_count * 12;
+  const isDue = new Date(progress.next_review_at).getTime() <= now;
+  const dueBonus = isDue ? 80 : 0;
+  // Net mistakes, not lifetime mistakes: each correct answer cancels one earlier
+  // wrong and the bonus is capped, so a word the user has since relearned stops
+  // crowding every session out of the pool.
+  const netMistakes = Math.max(0, progress.wrong_count - progress.correct_count);
+  const mistakeBonus = Math.min(36, netMistakes * 12);
   const weakBonus = Math.max(0, 5 - progress.familiarity_level) * 5;
   const frequencyBonus = word.frequency_level * 2;
+  // A word answered within the last 12h that isn't due yet steps aside so the
+  // pool rotates instead of re-serving what the user just practiced. Due words
+  // are exempt: an "again" rating 10 minutes ago should come right back.
+  const lastReviewedAt = progress.last_reviewed_at ? new Date(progress.last_reviewed_at).getTime() : null;
+  const cooldownPenalty =
+    !isDue && lastReviewedAt !== null && now - lastReviewedAt < RECENT_REVIEW_COOLDOWN_MS ? 60 : 0;
 
-  return dueBonus + mistakeBonus + weakBonus + frequencyBonus;
+  return dueBonus + mistakeBonus + weakBonus + frequencyBonus - cooldownPenalty;
 }
 
 function createPracticeQuestion(
