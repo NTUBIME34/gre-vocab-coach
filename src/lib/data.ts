@@ -72,12 +72,13 @@ export async function getDashboardStats(userId: string): Promise<DashboardStats>
     reviewedTodayResult,
     progressResult
   ] = await Promise.all([
+    // Mastered words count as due too: they keep their (long) schedule instead
+    // of retiring, so memories get maintenance reviews before the exam.
     supabase
       .from("user_progress")
       .select("word_id", { count: "exact", head: true })
       .eq("user_id", userId)
-      .lte("next_review_at", new Date().toISOString())
-      .eq("is_mastered", false),
+      .lte("next_review_at", new Date().toISOString()),
     supabase.from("vocabulary").select("id", { count: "exact", head: true }),
     supabase
       .from("user_progress")
@@ -163,10 +164,15 @@ export const getUserSettings = cache(async (userId: string): Promise<UserSetting
 
 export async function getDueReviewItems(userId: string, limit = 100): Promise<ReviewItem[]> {
   const supabase = await createClient();
+  // Queries user_progress directly instead of the v_due_reviews view: the view
+  // filtered out mastered words, permanently retiring them. Proper spaced
+  // repetition never retires a card -- mastered words keep resurfacing on their
+  // ever-longer intervals (30d, 60d, ...) so memories survive until exam day.
   const { data, error } = await supabase
-    .from("v_due_reviews")
-    .select("*")
+    .from("user_progress")
+    .select("*, vocabulary(*)")
     .eq("user_id", userId)
+    .lte("next_review_at", new Date().toISOString())
     .order("next_review_at", { ascending: true })
     .limit(limit);
 
@@ -174,29 +180,31 @@ export async function getDueReviewItems(userId: string, limit = 100): Promise<Re
     throw new Error(error.message);
   }
 
-  return (data ?? []).map((row) => ({
-    word_id: row.word_id,
-    word: row.word,
-    part_of_speech: row.part_of_speech,
-    chinese_meaning: row.chinese_meaning,
-    english_definition: row.english_definition,
-    example_sentence: row.example_sentence,
-    synonyms: row.synonyms ?? [],
-    antonyms: row.antonyms ?? [],
-    memory_hint: row.memory_hint,
-    difficulty_level: row.difficulty_level,
-    frequency_level: row.frequency_level,
-    source_book_chapter: row.source_book_chapter,
-    familiarity_level: row.familiarity_level,
-    correct_count: row.correct_count,
-    wrong_count: row.wrong_count,
-    last_reviewed_at: row.last_reviewed_at,
-    next_review_at: row.next_review_at,
-    review_interval: row.review_interval,
-    is_starred: row.is_starred,
-    is_mastered: row.is_mastered,
-    notes: row.notes
-  }));
+  return ((data ?? []) as ProgressWithWord[])
+    .filter((row): row is ProgressWithWord & { vocabulary: VocabularyRow } => Boolean(row.vocabulary))
+    .map((row) => ({
+      word_id: row.word_id,
+      word: row.vocabulary.word,
+      part_of_speech: row.vocabulary.part_of_speech,
+      chinese_meaning: row.vocabulary.chinese_meaning,
+      english_definition: row.vocabulary.english_definition,
+      example_sentence: row.vocabulary.example_sentence,
+      synonyms: row.vocabulary.synonyms ?? [],
+      antonyms: row.vocabulary.antonyms ?? [],
+      memory_hint: row.vocabulary.memory_hint,
+      difficulty_level: row.vocabulary.difficulty_level,
+      frequency_level: row.vocabulary.frequency_level,
+      source_book_chapter: row.vocabulary.source_book_chapter,
+      familiarity_level: row.familiarity_level,
+      correct_count: row.correct_count,
+      wrong_count: row.wrong_count,
+      last_reviewed_at: row.last_reviewed_at,
+      next_review_at: row.next_review_at,
+      review_interval: row.review_interval,
+      is_starred: row.is_starred,
+      is_mastered: row.is_mastered,
+      notes: row.notes
+    }));
 }
 
 export async function getAllVocabularyRows(): Promise<VocabularyRow[]> {

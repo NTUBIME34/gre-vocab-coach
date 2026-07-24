@@ -135,7 +135,10 @@ export default function GuidePage() {
                 <span className="font-medium text-slate-950 dark:text-slate-50">翻卡前想不起來的就按 Again。</span>
                 騙過系統只會讓弱字更晚回來找你。選擇題矇對的也一樣算不會——下次這個字出現在翻卡時，記得誠實評分。
               </li>
-              <li>複習間隔累積到 30 天，該字標記為 Mastered，之後幾乎不再佔用你的時間。</li>
+              <li>
+                複習間隔累積到 30 天，該字標記為 Mastered——之後不會消失，只是回歸頻率變得很低（30
+                天起跳、答對一次再翻倍），用最少的時間維持記憶到考試當天。
+              </li>
               <li>
                 Practice 答對的間隔推進比翻卡保守（從選項中「認出」比憑空「想起」容易），所以選擇題刷得再多，也取代不了每天的
                 Review。

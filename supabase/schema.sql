@@ -187,5 +187,4 @@ select
   up.notes
 from public.user_progress up
 join public.vocabulary v on v.id = up.word_id
-where up.next_review_at <= now()
-  and up.is_mastered = false;
+where up.next_review_at <= now();

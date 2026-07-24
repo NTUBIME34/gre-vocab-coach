@@ -139,7 +139,9 @@ function scoreWord(word: VocabularyRow, progressByWordId: ProgressMap, now: numb
     return 70 + word.frequency_level * 2 + word.difficulty_level;
   }
 
-  const dueBonus = new Date(progress.next_review_at).getTime() <= now && !progress.is_mastered ? 80 : 0;
+  // Mastered words still earn the due bonus when their (long) interval lapses:
+  // spaced repetition never retires a card, it just sees it less often.
+  const dueBonus = new Date(progress.next_review_at).getTime() <= now ? 80 : 0;
   const mistakeBonus = progress.wrong_count * 12;
   const weakBonus = Math.max(0, 5 - progress.familiarity_level) * 5;
   const frequencyBonus = word.frequency_level * 2;

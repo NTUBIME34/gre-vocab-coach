@@ -156,3 +156,33 @@ describe("buildPracticeQuestions target mode", () => {
     expect(questions.every((q) => q.wordId.startsWith("weak-"))).toBe(true);
   });
 });
+
+describe("buildPracticeQuestions smart mode", () => {
+  it("keeps serving mastered words once their long interval lapses", () => {
+    // A due-but-mastered word must outrank unseen low-frequency words:
+    // mastery lowers a card's frequency of appearance, it never retires it.
+    const masteredDue = makeWord({ id: "mastered-due", word: "mastereddue", frequency_level: 3 });
+    const fillers = Array.from({ length: 10 }, (_, i) =>
+      makeWord({ id: `unseen-${i}`, word: `unseen${i}`, frequency_level: 1, difficulty_level: 1 })
+    );
+    const progressRows: UserProgressRow[] = [
+      makeProgress({
+        word_id: "mastered-due",
+        familiarity_level: 5,
+        is_mastered: true,
+        review_interval: 30,
+        next_review_at: "2026-01-01T00:00:00.000Z"
+      })
+    ];
+
+    const questions = buildPracticeQuestions({
+      vocabulary: [masteredDue, ...fillers],
+      progressRows,
+      mode: "smart",
+      questionType: "definition",
+      count: 5
+    });
+
+    expect(questions.some((q) => q.wordId === "mastered-due")).toBe(true);
+  });
+});
