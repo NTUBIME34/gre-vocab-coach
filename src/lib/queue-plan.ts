@@ -16,17 +16,23 @@ export type DailyQueueBudget = {
  *
  * Reserving the new-word allowance up front fixes that without raising the total
  * workload the learner configured. The reservation is capped at half the limit so
- * a large daily_new_words can't starve reviews in the other direction.
+ * a large daily_new_words can't starve reviews in the other direction, and at
+ * `availableNewWords` so it is never held open for words that don't exist -- a
+ * learner whose whole book is already tracked would otherwise get a permanently
+ * short queue (80 cards out of a requested 100) with nothing to fill the gap.
  */
 export function planDailyQueue({
   dailyReviewLimit,
-  dailyNewWords
+  dailyNewWords,
+  availableNewWords
 }: {
   dailyReviewLimit: number;
   dailyNewWords: number;
+  availableNewWords: number;
 }): DailyQueueBudget {
   const totalLimit = Math.max(0, Math.floor(dailyReviewLimit));
-  const wantedNew = Math.max(0, Math.floor(dailyNewWords));
+  const available = Math.max(0, Math.floor(availableNewWords));
+  const wantedNew = Math.min(Math.max(0, Math.floor(dailyNewWords)), available);
   const reservedForNew = Math.min(wantedNew, Math.floor(totalLimit / 2));
   const dueBudget = Math.max(totalLimit - reservedForNew, 0);
 

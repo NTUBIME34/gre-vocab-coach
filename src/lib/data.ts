@@ -241,6 +241,21 @@ export async function getAllUserProgressRows(userId: string): Promise<UserProgre
   );
 }
 
+/**
+ * How many vocabulary words have no progress row for this user, i.e. how many are
+ * still available to introduce as brand-new cards. Two head+count queries, so no
+ * rows cross the wire.
+ */
+export async function countUntrackedWords(userId: string): Promise<number> {
+  const supabase = await createClient();
+  const [vocabularyResult, trackedResult] = await Promise.all([
+    supabase.from("vocabulary").select("id", { count: "exact", head: true }),
+    supabase.from("user_progress").select("word_id", { count: "exact", head: true }).eq("user_id", userId)
+  ]);
+
+  return Math.max((vocabularyResult.count ?? 0) - (trackedResult.count ?? 0), 0);
+}
+
 export async function getTrackedWordIds(userId: string): Promise<Set<string>> {
   const supabase = await createClient();
   const rows = await fetchAllPages<{ word_id: string }>((from, to) =>
@@ -253,13 +268,19 @@ export async function getTrackedWordIds(userId: string): Promise<Set<string>> {
 export async function getTodayReviewQueue(userId: string): Promise<ReviewItem[]> {
   const supabase = await createClient();
   const settings = await getUserSettings(userId);
-  // The due fetch is deliberately smaller than the daily limit so the new-word
-  // allowance survives a full queue -- see planDailyQueue for why.
+  // Fetched at the full limit and trimmed afterwards: the new-word reservation
+  // depends on how many untracked words actually exist, and running that count in
+  // parallel keeps it off the critical path instead of adding a round trip.
+  const [dueCandidates, availableNewWords] = await Promise.all([
+    getDueReviewItems(userId, settings.daily_review_limit),
+    countUntrackedWords(userId)
+  ]);
   const budget = planDailyQueue({
     dailyReviewLimit: settings.daily_review_limit,
-    dailyNewWords: settings.daily_new_words
+    dailyNewWords: settings.daily_new_words,
+    availableNewWords
   });
-  const dueItems = await getDueReviewItems(userId, budget.dueBudget);
+  const dueItems = dueCandidates.slice(0, budget.dueBudget);
   const newLimit = budget.newLimit(dueItems.length);
 
   if (newLimit <= 0) {
