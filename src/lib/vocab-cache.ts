@@ -1,3 +1,4 @@
+import { fetchAllPages } from "@/lib/supabase/paginate";
 import { createClient } from "@/lib/supabase/server";
 import type { Database } from "@/types/database";
 
@@ -52,26 +53,14 @@ export function invalidateVocabularyCache() {
 
 async function fetchAllVocabularyRows(): Promise<VocabularyRow[]> {
   const supabase = await createClient();
-  const pageSize = 1000;
-  const rows: VocabularyRow[] = [];
 
-  for (let from = 0; ; from += pageSize) {
-    const { data, error } = await supabase
+  return fetchAllPages<VocabularyRow>((from, to) =>
+    supabase
       .from("vocabulary")
       .select("*")
       .order("frequency_level", { ascending: false })
       .order("difficulty_level", { ascending: false })
       .order("word", { ascending: true })
-      .range(from, from + pageSize - 1);
-
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    rows.push(...(data ?? []));
-
-    if (!data || data.length < pageSize) {
-      return rows;
-    }
-  }
+      .range(from, to)
+  );
 }

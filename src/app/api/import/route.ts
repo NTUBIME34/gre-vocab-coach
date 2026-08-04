@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { getTrackedWordIds } from "@/lib/data";
 import { parseVocabularyCsv, splitCsvList } from "@/lib/import/parse-vocabulary-csv";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { chunkRows, writeInChunks } from "@/lib/supabase/batch";
 import { fetchAllPages } from "@/lib/supabase/paginate";
 import { createClient } from "@/lib/supabase/server";
 import { invalidateVocabularyCache } from "@/lib/vocab-cache";
@@ -85,20 +86,27 @@ export async function POST(request: Request) {
       source_book_chapter: row.source_book_chapter || null
     }));
 
-  let insertedWordIds: string[] = [];
+  const insertedWordIds: string[] = [];
 
   if (rowsToInsert.length) {
-    const { data: inserted, error: insertError } = await adminSupabase
-      .from("vocabulary")
-      .insert(rowsToInsert)
-      .select("id");
+    // Chunked for two reasons: one request carrying a whole book is a timeout
+    // risk, and the `.select("id")` that returns the new ids is itself subject to
+    // the 1000-row read cap -- inserting more than 1000 words at once would hand
+    // back only 1000 ids, so the rest would never get a progress row.
+    for (const chunk of chunkRows(rowsToInsert)) {
+      const { data: inserted, error: insertError } = await adminSupabase
+        .from("vocabulary")
+        .insert(chunk)
+        .select("id");
 
-    if (insertError) {
-      console.error("[api:import.insert]", insertError.message);
-      return NextResponse.json({ ok: false, message: "Could not save the imported words." }, { status: 500 });
+      if (insertError) {
+        console.error("[api:import.insert]", insertError.message);
+        return NextResponse.json({ ok: false, message: "Could not save the imported words." }, { status: 500 });
+      }
+
+      insertedWordIds.push(...(inserted ?? []).map((row) => row.id));
     }
 
-    insertedWordIds = (inserted ?? []).map((row) => row.id);
     invalidateVocabularyCache();
   }
 
@@ -120,9 +128,9 @@ export async function POST(request: Request) {
     }));
 
   if (progressRows.length) {
-    const { error: progressInsertError } = await supabase
-      .from("user_progress")
-      .upsert(progressRows, { onConflict: "user_id,word_id", ignoreDuplicates: true });
+    const progressInsertError = await writeInChunks(progressRows, (chunk) =>
+      supabase.from("user_progress").upsert(chunk, { onConflict: "user_id,word_id", ignoreDuplicates: true })
+    );
 
     if (progressInsertError) {
       console.error("[api:import.progressInsert]", progressInsertError.message);

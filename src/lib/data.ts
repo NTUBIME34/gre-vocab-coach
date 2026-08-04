@@ -1,6 +1,7 @@
 import { cache } from "react";
 import { throwDataError } from "@/lib/errors";
 import { planDailyQueue } from "@/lib/queue-plan";
+import { summarizeReviewLogs, type ReviewLogSample } from "@/lib/review-stats";
 import { buildContainsFilter } from "@/lib/search";
 import { fetchAllPages } from "@/lib/supabase/paginate";
 import { createClient } from "@/lib/supabase/server";
@@ -416,36 +417,63 @@ export async function getWordDetail(
   };
 }
 
-export async function getMistakeItems(userId: string): Promise<ProgressWithWord[]> {
+export type MistakeListResult = {
+  rows: ProgressWithWord[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
+/**
+ * One page of missed words, worst first. This used to be a flat `.limit(200)`,
+ * which silently hid the rest -- with 2,000+ words in rotation the mistake list
+ * runs well past 200, so the page was showing a fraction of the real weak set
+ * with nothing on screen to say so.
+ */
+export async function getMistakeItems(userId: string, page = 1, pageSize = 100): Promise<MistakeListResult> {
   const supabase = await createClient();
-  const { data, error } = await supabase
+  const safePage = Math.max(1, Math.floor(page) || 1);
+  const from = (safePage - 1) * pageSize;
+
+  const { data, error, count } = await supabase
     .from("user_progress")
-    .select("*, vocabulary(*)")
+    .select("*, vocabulary(*)", { count: "exact" })
     .eq("user_id", userId)
     .gt("wrong_count", 0)
     .order("wrong_count", { ascending: false })
-    .limit(200);
+    .order("word_id", { ascending: true })
+    .range(from, from + pageSize - 1);
 
   if (error) {
     throwDataError("getMistakeItems", error);
   }
 
-  return (data ?? []) as ProgressWithWord[];
+  return { rows: (data ?? []) as ProgressWithWord[], total: count ?? 0, page: safePage, pageSize };
 }
+
+export const STATS_WINDOW_DAYS = 14;
 
 export async function getStats(userId: string) {
   const supabase = await createClient();
-  const since = new Date();
-  since.setDate(since.getDate() - 14);
+  const now = new Date();
+  const since = new Date(now.getTime());
+  since.setDate(since.getDate() - STATS_WINDOW_DAYS);
 
-  const [dashboard, logsResult, progressRows, mistakesResult] = await Promise.all([
+  const [dashboard, logRows, progressRows, mistakesResult] = await Promise.all([
     getDashboardStats(userId),
-    supabase
-      .from("review_logs")
-      .select("*")
-      .eq("user_id", userId)
-      .gte("review_time", since.toISOString())
-      .order("review_time", { ascending: false }),
+    // Paged, and only the three columns the summary needs. An unpaged select("*")
+    // stopped at 1000 of the window's rows, so "14-day reviews", accuracy, the
+    // rating distribution and the average response time were all really just
+    // "the most recent 1000 reviews" wearing a 14-day label.
+    fetchAllPages<ReviewLogSample>((from, to) =>
+      supabase
+        .from("review_logs")
+        .select("answer_result, response_time, review_time")
+        .eq("user_id", userId)
+        .gte("review_time", since.toISOString())
+        .order("review_time", { ascending: false })
+        .range(from, to)
+    ),
     // Paged: an unpaged read stopped at 1000 rows and halved every mastery and
     // familiarity figure on the Stats page.
     getAllUserProgressRows(userId),
@@ -458,17 +486,13 @@ export async function getStats(userId: string) {
       .limit(5)
   ]);
 
-  if (logsResult.error) {
-    throwDataError("getStats.logs", logsResult.error);
-  }
-
   if (mistakesResult.error) {
     throwDataError("getStats.mistakes", mistakesResult.error);
   }
 
   return {
     dashboard,
-    recentLogs: logsResult.data ?? [],
+    reviewSummary: summarizeReviewLogs(logRows, { days: STATS_WINDOW_DAYS, now }),
     progressRows,
     mostMissedWords: (mistakesResult.data ?? []) as ProgressWithWord[]
   };

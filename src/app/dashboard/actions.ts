@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/auth";
 import { getAllVocabularyRows, getTrackedWordIds, getUserSettings } from "@/lib/data";
 import { safeErrorMessage } from "@/lib/errors";
 import { staggeredDueDate } from "@/lib/queue-plan";
+import { writeInChunks } from "@/lib/supabase/batch";
 import { createClient } from "@/lib/supabase/server";
 
 export async function initializeUserProgressAction() {
@@ -48,12 +49,12 @@ export async function initializeUserProgressAction() {
     is_mastered: false
   }));
 
-  const { error: insertError } = await supabase
-    .from("user_progress")
-    .upsert(rowsToInsert, { onConflict: "user_id,word_id", ignoreDuplicates: true });
+  const insertError = await writeInChunks(rowsToInsert, (chunk) =>
+    supabase.from("user_progress").upsert(chunk, { onConflict: "user_id,word_id", ignoreDuplicates: true })
+  );
 
   if (insertError) {
-    return { ok: false, message: safeErrorMessage("initializeUserProgress.insert", insertError) };
+    return { ok: false, message: safeErrorMessage("initializeUserProgress.insert", insertError as Error) };
   }
 
   revalidatePath("/dashboard");

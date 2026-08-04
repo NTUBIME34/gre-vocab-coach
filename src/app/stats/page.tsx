@@ -3,31 +3,23 @@ import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { requireUser } from "@/lib/auth";
-import { getStats } from "@/lib/data";
+import { getStats, STATS_WINDOW_DAYS } from "@/lib/data";
 
 export default async function StatsPage() {
   const user = await requireUser();
   const stats = await getStats(user.id);
-  const totalReviews = stats.recentLogs.length;
-  const correctReviews = stats.recentLogs.filter((log) => log.answer_result === "good" || log.answer_result === "easy").length;
-  const accuracy = totalReviews ? Math.round((correctReviews / totalReviews) * 100) : 0;
+  const summary = stats.reviewSummary;
+  const totalReviews = summary.total;
+  const accuracy = summary.accuracyPercent;
+  const ratingCounts = summary.ratingCounts;
   const hardWords = stats.progressRows.filter((row) => row.familiarity_level <= 2).length;
   const masteryRatio = stats.dashboard.totalWords
     ? Math.round((stats.dashboard.masteredCount / stats.dashboard.totalWords) * 100)
     : 0;
-  const responseTimes = stats.recentLogs
-    .map((log) => log.response_time)
-    .filter((value): value is number => typeof value === "number" && value > 0);
-  const averageResponseTime = responseTimes.length
-    ? `${(responseTimes.reduce((sum, value) => sum + value, 0) / responseTimes.length / 1000).toFixed(1)}s`
-    : "-";
-
-  const ratingCounts = {
-    again: stats.recentLogs.filter((log) => log.answer_result === "again").length,
-    hard: stats.recentLogs.filter((log) => log.answer_result === "hard").length,
-    good: stats.recentLogs.filter((log) => log.answer_result === "good").length,
-    easy: stats.recentLogs.filter((log) => log.answer_result === "easy").length
-  };
+  const averageResponseTime =
+    summary.averageResponseSeconds === null ? "-" : `${summary.averageResponseSeconds.toFixed(1)}s`;
+  const peakDay = Math.max(...summary.dailyCounts.map((day) => day.count), 1);
+  const dailyAverage = Math.round(totalReviews / STATS_WINDOW_DAYS);
 
   return (
     <AppShell>
@@ -38,15 +30,41 @@ export default async function StatsPage() {
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="14-day reviews" value={totalReviews} helper="Recent review logs" />
+        <StatCard
+          label={`${STATS_WINDOW_DAYS}-day reviews`}
+          value={totalReviews}
+          helper={`約每天 ${dailyAverage} 次`}
+        />
         <StatCard label="Accuracy" value={`${accuracy}%`} helper="Good or Easy ratings" />
         <StatCard label="Hard words" value={hardWords} helper="Familiarity level 0-2" />
         <StatCard label="Mastery" value={`${masteryRatio}%`} helper={`${stats.dashboard.masteredCount} mastered`} />
       </div>
 
+      <Card className="mt-6">
+        <CardHeader title="每日複習量" description={`過去 ${STATS_WINDOW_DAYS} 天，看得出有沒有斷檔。`} />
+        <CardBody>
+          <div className="flex items-end justify-between gap-1 sm:gap-2" style={{ height: "8rem" }}>
+            {summary.dailyCounts.map((day) => (
+              <div key={day.date} className="flex flex-1 flex-col items-center justify-end gap-2">
+                <span className="text-[10px] tabular-nums text-slate-500 dark:text-slate-400">
+                  {day.count || ""}
+                </span>
+                <div
+                  className={`w-full rounded-t ${
+                    day.count ? "bg-slate-950 dark:bg-slate-50" : "bg-slate-200 dark:bg-slate-800"
+                  }`}
+                  style={{ height: `${Math.max((day.count / peakDay) * 100, day.count ? 4 : 2)}%` }}
+                />
+                <span className="text-[10px] tabular-nums text-slate-400 dark:text-slate-500">{day.label}</span>
+              </div>
+            ))}
+          </div>
+        </CardBody>
+      </Card>
+
       <div className="mt-6 grid gap-5 lg:grid-cols-2">
         <Card>
-          <CardHeader title="Rating distribution" description="Last 14 days" />
+          <CardHeader title="Rating distribution" description={`Last ${STATS_WINDOW_DAYS} days`} />
           <CardBody className="space-y-4">
             <Bar label="Again" value={ratingCounts.again} total={Math.max(totalReviews, 1)} />
             <Bar label="Hard" value={ratingCounts.hard} total={Math.max(totalReviews, 1)} />

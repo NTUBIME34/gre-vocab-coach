@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
+import { fetchAllPages } from "@/lib/supabase/paginate";
 import { createClient } from "@/lib/supabase/server";
 
 function escapeCsv(value: unknown) {
@@ -10,25 +11,15 @@ function escapeCsv(value: unknown) {
 export async function GET() {
   await requireUser();
   const supabase = await createClient();
-  const pageSize = 1000;
-  const data: Record<string, unknown>[] = [];
 
-  for (let from = 0; ; from += pageSize) {
-    const { data: page, error } = await supabase
-      .from("vocabulary")
-      .select("*")
-      .order("word", { ascending: true })
-      .range(from, from + pageSize - 1);
-
-    if (error) {
-      return NextResponse.json({ ok: false, message: error.message }, { status: 500 });
-    }
-
-    data.push(...(page ?? []));
-
-    if (!page || page.length < pageSize) {
-      break;
-    }
+  let data: Record<string, unknown>[];
+  try {
+    data = await fetchAllPages<Record<string, unknown>>((from, to) =>
+      supabase.from("vocabulary").select("*").order("word", { ascending: true }).range(from, to)
+    );
+  } catch (error) {
+    console.error("[api:export]", error);
+    return NextResponse.json({ ok: false, message: "Could not export the vocabulary bank." }, { status: 500 });
   }
 
   const headers = [
