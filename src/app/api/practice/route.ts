@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getAllUserProgressRows } from "@/lib/data";
 import { buildPracticeQuestions, type PracticeMode, type PracticeQuestionType } from "@/lib/practice";
 import { createClient } from "@/lib/supabase/server";
 import { getVocabularyRowsCached } from "@/lib/vocab-cache";
@@ -22,26 +23,19 @@ export async function GET(request: Request) {
   const count = Number(url.searchParams.get("count") ?? 10);
 
   let vocabulary;
-  let progressResult;
+  let progressRows;
   try {
-    [vocabulary, progressResult] = await Promise.all([
-      getVocabularyRowsCached(),
-      supabase.from("user_progress").select("*").eq("user_id", user.id)
-    ]);
+    // Both reads page: a truncated progress list made Practice treat words the
+    // learner already knows as unseen and push them to the front of the pool.
+    [vocabulary, progressRows] = await Promise.all([getVocabularyRowsCached(), getAllUserProgressRows(user.id)]);
   } catch (error) {
-    return NextResponse.json(
-      { ok: false, message: error instanceof Error ? error.message : "Failed to load vocabulary." },
-      { status: 500 }
-    );
-  }
-
-  if (progressResult.error) {
-    return NextResponse.json({ ok: false, message: progressResult.error.message }, { status: 500 });
+    console.error("[api:practice]", error);
+    return NextResponse.json({ ok: false, message: "Could not load practice questions." }, { status: 500 });
   }
 
   const questions = buildPracticeQuestions({
     vocabulary,
-    progressRows: progressResult.data ?? [],
+    progressRows,
     mode,
     questionType,
     count: Number.isFinite(count) ? count : 10

@@ -62,7 +62,6 @@ export function BlitzGame() {
       }
     }, 200);
     return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status]);
 
   // Running out of questions before the clock ends the round early.
@@ -70,7 +69,6 @@ export function BlitzGame() {
     if (status === "running" && questions.length > 0 && index >= questions.length) {
       finishRound();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, index, questions.length]);
 
   async function startRound() {

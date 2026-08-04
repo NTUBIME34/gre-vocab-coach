@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
+import { buildContainsFilter, MAX_SEARCH_LENGTH } from "@/lib/search";
 import { createClient } from "@/lib/supabase/server";
 
-const MAX_QUERY_LENGTH = 80;
+const MAX_QUERY_LENGTH = MAX_SEARCH_LENGTH;
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -21,23 +22,28 @@ export async function POST(request: Request) {
   }
 
   const normalized = query.toLowerCase();
-  const safeTerm = query.replace(/[,%]/g, " ").trim();
+  // ,.()%*\"' all carry meaning inside a PostgREST or() filter -- stripped centrally.
+  const filter = buildContainsFilter(["word", "chinese_meaning", "english_definition"], query);
   const exactResult = await supabase.from("vocabulary").select("*").eq("normalized_word", normalized).maybeSingle();
 
   if (exactResult.error) {
-    return NextResponse.json({ ok: false, message: exactResult.error.message }, { status: 500 });
+    console.error("[api:dictionary.exact]", exactResult.error.message);
+    return NextResponse.json({ ok: false, message: "Dictionary lookup failed." }, { status: 500 });
   }
 
-  const suggestionsResult = await supabase
-    .from("vocabulary")
-    .select("*")
-    .or(`word.ilike.%${safeTerm}%,chinese_meaning.ilike.%${safeTerm}%,english_definition.ilike.%${safeTerm}%`)
-    .order("frequency_level", { ascending: false })
-    .order("word", { ascending: true })
-    .limit(12);
+  const suggestionsResult = filter
+    ? await supabase
+        .from("vocabulary")
+        .select("*")
+        .or(filter)
+        .order("frequency_level", { ascending: false })
+        .order("word", { ascending: true })
+        .limit(12)
+    : { data: [], error: null };
 
   if (suggestionsResult.error) {
-    return NextResponse.json({ ok: false, message: suggestionsResult.error.message }, { status: 500 });
+    console.error("[api:dictionary.suggestions]", suggestionsResult.error.message);
+    return NextResponse.json({ ok: false, message: "Dictionary lookup failed." }, { status: 500 });
   }
 
   const exact = exactResult.data;

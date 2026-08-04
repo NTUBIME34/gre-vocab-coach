@@ -46,8 +46,11 @@ export function PracticeShell() {
     [answeredWordIds.length, correctCount]
   );
 
+  // Intentionally mount-only: startSession is recreated every render and
+  // re-running it on each change would restart the drill mid-question.
   useEffect(() => {
     startSession();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function startSession() {

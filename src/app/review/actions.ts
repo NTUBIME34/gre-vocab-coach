@@ -1,5 +1,7 @@
 "use server";
 
+import { isUuid } from "@/lib/data";
+import { safeErrorMessage } from "@/lib/errors";
 import { buildUserProgressUpdate, calculateNextReview } from "@/lib/srs";
 import { createClient } from "@/lib/supabase/server";
 import type { ReviewMode, ReviewRating } from "@/types/database";
@@ -22,6 +24,10 @@ export async function submitReviewAction(input: SubmitReviewInput) {
     return { ok: false, message: "Please sign in before reviewing." };
   }
 
+  if (!isUuid(input.wordId)) {
+    return { ok: false, message: "Unknown word." };
+  }
+
   const { data: progress, error: progressError } = await supabase
     .from("user_progress")
     .select("*")
@@ -30,7 +36,7 @@ export async function submitReviewAction(input: SubmitReviewInput) {
     .maybeSingle();
 
   if (progressError) {
-    return { ok: false, message: progressError.message };
+    return { ok: false, message: safeErrorMessage("submitReview.load", progressError) };
   }
 
   const currentProgress = progress ?? {
@@ -65,7 +71,7 @@ export async function submitReviewAction(input: SubmitReviewInput) {
   });
 
   if (upsertError) {
-    return { ok: false, message: upsertError.message };
+    return { ok: false, message: safeErrorMessage("submitReview.upsert", upsertError) };
   }
 
   const { error: logError } = await supabase.from("review_logs").insert({
@@ -78,7 +84,7 @@ export async function submitReviewAction(input: SubmitReviewInput) {
   });
 
   if (logError) {
-    return { ok: false, message: logError.message };
+    return { ok: false, message: safeErrorMessage("submitReview.log", logError) };
   }
 
   // No revalidatePath here: every page reading this data is dynamic (cookie-based

@@ -1,9 +1,14 @@
 import { NextResponse } from "next/server";
+import { isAdminUser } from "@/lib/admin";
 import { requireUser } from "@/lib/auth";
+import { getTrackedWordIds } from "@/lib/data";
 import { parseVocabularyCsv, splitCsvList } from "@/lib/import/parse-vocabulary-csv";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { fetchAllPages } from "@/lib/supabase/paginate";
 import { createClient } from "@/lib/supabase/server";
 import { invalidateVocabularyCache } from "@/lib/vocab-cache";
+
+const MAX_UPLOAD_BYTES = 2 * 1024 * 1024;
 
 function normalizeWord(word: string) {
   return word.trim().toLowerCase().replace(/\s+/g, " ");
@@ -11,16 +16,31 @@ function normalizeWord(word: string) {
 
 export async function POST(request: Request) {
   const user = await requireUser();
+
+  // `vocabulary` is one shared table for every account and this route writes to
+  // it with the service-role client, which bypasses RLS. Signup is open, so
+  // "signed in" is not a sufficient check -- any account could otherwise rewrite
+  // the word bank for everyone.
+  if (!isAdminUser(user.id)) {
+    return NextResponse.json({ ok: false, message: "This account cannot import vocabulary." }, { status: 403 });
+  }
+
   const supabase = await createClient();
-  // Writing to the shared `vocabulary` table is an admin-only operation (see
-  // supabase/20260715_restrict_vocabulary_insert.sql) -- user_progress below still
-  // goes through the RLS-scoped client since it's this user's own data.
   const adminSupabase = createAdminClient();
   const formData = await request.formData();
   const file = formData.get("file");
 
   if (!(file instanceof File)) {
     return NextResponse.json({ ok: false, message: "Please upload a CSV file." }, { status: 400 });
+  }
+
+  // Guard before reading: file.text() buffers the whole upload into the
+  // function's memory, so an oversized file is a denial of service.
+  if (file.size > MAX_UPLOAD_BYTES) {
+    return NextResponse.json(
+      { ok: false, message: `CSV is too large (max ${MAX_UPLOAD_BYTES / 1024 / 1024} MB).` },
+      { status: 413 }
+    );
   }
 
   const text = await file.text();
@@ -30,24 +50,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, message: parsed.errors.slice(0, 10).join("\n") }, { status: 400 });
   }
 
-  const existingWords: { id: string; word: string }[] = [];
-  const pageSize = 1000;
-
-  for (let from = 0; ; from += pageSize) {
-    const { data: page, error: existingError } = await adminSupabase
-      .from("vocabulary")
-      .select("id, word")
-      .range(from, from + pageSize - 1);
-
-    if (existingError) {
-      return NextResponse.json({ ok: false, message: existingError.message }, { status: 500 });
-    }
-
-    existingWords.push(...(page ?? []));
-
-    if (!page || page.length < pageSize) {
-      break;
-    }
+  let existingWords: { id: string; word: string }[];
+  try {
+    existingWords = await fetchAllPages<{ id: string; word: string }>((from, to) =>
+      adminSupabase.from("vocabulary").select("id, word").order("id").range(from, to)
+    );
+  } catch (error) {
+    console.error("[api:import.existing]", error);
+    return NextResponse.json({ ok: false, message: "Could not read the vocabulary bank." }, { status: 500 });
   }
 
   const existingByWord = new Map(existingWords.map((word) => [normalizeWord(word.word), word.id]));
@@ -84,7 +94,8 @@ export async function POST(request: Request) {
       .select("id");
 
     if (insertError) {
-      return NextResponse.json({ ok: false, message: insertError.message }, { status: 500 });
+      console.error("[api:import.insert]", insertError.message);
+      return NextResponse.json({ ok: false, message: "Could not save the imported words." }, { status: 500 });
     }
 
     insertedWordIds = (inserted ?? []).map((row) => row.id);
@@ -92,16 +103,14 @@ export async function POST(request: Request) {
   }
 
   const allWordIds = [...existingByWord.values(), ...insertedWordIds];
-  const { data: progress, error: progressError } = await supabase
-    .from("user_progress")
-    .select("word_id")
-    .eq("user_id", user.id);
-
-  if (progressError) {
-    return NextResponse.json({ ok: false, message: progressError.message }, { status: 500 });
+  let existingProgressIds: Set<string>;
+  try {
+    existingProgressIds = await getTrackedWordIds(user.id);
+  } catch (error) {
+    console.error("[api:import.progress]", error);
+    return NextResponse.json({ ok: false, message: "Could not read your progress rows." }, { status: 500 });
   }
 
-  const existingProgressIds = new Set((progress ?? []).map((row) => row.word_id));
   const progressRows = allWordIds
     .filter((wordId) => !existingProgressIds.has(wordId))
     .map((wordId) => ({
@@ -116,7 +125,8 @@ export async function POST(request: Request) {
       .upsert(progressRows, { onConflict: "user_id,word_id", ignoreDuplicates: true });
 
     if (progressInsertError) {
-      return NextResponse.json({ ok: false, message: progressInsertError.message }, { status: 500 });
+      console.error("[api:import.progressInsert]", progressInsertError.message);
+      return NextResponse.json({ ok: false, message: "Could not create your progress rows." }, { status: 500 });
     }
   }
 

@@ -38,7 +38,6 @@ export function MatchGame() {
         clearTimeout(wrongFlashTimer.current);
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

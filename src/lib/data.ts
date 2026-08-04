@@ -1,4 +1,8 @@
 import { cache } from "react";
+import { throwDataError } from "@/lib/errors";
+import { planDailyQueue } from "@/lib/queue-plan";
+import { buildContainsFilter } from "@/lib/search";
+import { fetchAllPages } from "@/lib/supabase/paginate";
 import { createClient } from "@/lib/supabase/server";
 import { getVocabularyRowsCached } from "@/lib/vocab-cache";
 import type { Database } from "@/types/database";
@@ -95,11 +99,14 @@ export async function getDashboardStats(userId: string): Promise<DashboardStats>
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId)
       .gte("review_time", today.toISOString()),
-    supabase.from("user_progress").select("word_id").eq("user_id", userId)
+    // head+count, not a row fetch: a plain select() is capped at 1000 rows by
+    // PostgREST, which made trackedWords stick at 1000 and the dashboard claim
+    // ~1000 untracked words forever.
+    supabase.from("user_progress").select("word_id", { count: "exact", head: true }).eq("user_id", userId)
   ]);
 
   const totalWords = wordsResult.count ?? 0;
-  const trackedWords = progressResult.data?.length ?? 0;
+  const trackedWords = progressResult.count ?? 0;
 
   return {
     dueCount: dueResult.count ?? 0,
@@ -127,7 +134,7 @@ export const getUserSettings = cache(async (userId: string): Promise<UserSetting
   const { data, error } = await supabase.from("user_settings").select("*").eq("user_id", userId).maybeSingle();
 
   if (error) {
-    throw new Error(error.message);
+    throwDataError("getUserSettings", error);
   }
 
   if (data) {
@@ -146,7 +153,7 @@ export const getUserSettings = cache(async (userId: string): Promise<UserSetting
     .upsert(defaults, { onConflict: "user_id", ignoreDuplicates: true });
 
   if (insertError) {
-    throw new Error(insertError.message);
+    throwDataError("getUserSettings.insert", insertError);
   }
 
   const { data: inserted, error: refetchError } = await supabase
@@ -156,7 +163,7 @@ export const getUserSettings = cache(async (userId: string): Promise<UserSetting
     .maybeSingle();
 
   if (refetchError) {
-    throw new Error(refetchError.message);
+    throwDataError("getUserSettings.refetch", refetchError);
   }
 
   return inserted ?? { ...defaults, created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
@@ -177,7 +184,7 @@ export async function getDueReviewItems(userId: string, limit = 100): Promise<Re
     .limit(limit);
 
   if (error) {
-    throw new Error(error.message);
+    throwDataError("getDueReviewItems", error);
   }
 
   return ((data ?? []) as ProgressWithWord[])
@@ -209,56 +216,57 @@ export async function getDueReviewItems(userId: string, limit = 100): Promise<Re
 
 export async function getAllVocabularyRows(): Promise<VocabularyRow[]> {
   const supabase = await createClient();
-  const pageSize = 1000;
-  const rows: VocabularyRow[] = [];
 
-  for (let from = 0; ; from += pageSize) {
-    const { data, error } = await supabase
+  return fetchAllPages<VocabularyRow>((from, to) =>
+    supabase
       .from("vocabulary")
       .select("*")
       .order("frequency_level", { ascending: false })
       .order("difficulty_level", { ascending: false })
       .order("word", { ascending: true })
-      .range(from, from + pageSize - 1);
+      .range(from, to)
+  );
+}
 
-    if (error) {
-      throw new Error(error.message);
-    }
+/**
+ * Every row of this user's progress. Must page: the table already holds one row
+ * per vocabulary word (2,060 and growing), well past PostgREST's 1000-row cap,
+ * and a truncated read silently reports learned words as brand new.
+ */
+export async function getAllUserProgressRows(userId: string): Promise<UserProgressRow[]> {
+  const supabase = await createClient();
 
-    rows.push(...(data ?? []));
+  return fetchAllPages<UserProgressRow>((from, to) =>
+    supabase.from("user_progress").select("*").eq("user_id", userId).order("word_id").range(from, to)
+  );
+}
 
-    if (!data || data.length < pageSize) {
-      return rows;
-    }
-  }
+export async function getTrackedWordIds(userId: string): Promise<Set<string>> {
+  const supabase = await createClient();
+  const rows = await fetchAllPages<{ word_id: string }>((from, to) =>
+    supabase.from("user_progress").select("word_id").eq("user_id", userId).order("word_id").range(from, to)
+  );
+
+  return new Set(rows.map((row) => row.word_id));
 }
 
 export async function getTodayReviewQueue(userId: string): Promise<ReviewItem[]> {
   const supabase = await createClient();
   const settings = await getUserSettings(userId);
-  const dueItems = await getDueReviewItems(userId, settings.daily_review_limit);
-  const remainingSlots = Math.max(settings.daily_review_limit - dueItems.length, 0);
-
-  if (remainingSlots <= 0) {
-    return dueItems.sort((a, b) => b.wrong_count - a.wrong_count);
-  }
-
-  const newLimit = Math.min(settings.daily_new_words, remainingSlots);
+  // The due fetch is deliberately smaller than the daily limit so the new-word
+  // allowance survives a full queue -- see planDailyQueue for why.
+  const budget = planDailyQueue({
+    dailyReviewLimit: settings.daily_review_limit,
+    dailyNewWords: settings.daily_new_words
+  });
+  const dueItems = await getDueReviewItems(userId, budget.dueBudget);
+  const newLimit = budget.newLimit(dueItems.length);
 
   if (newLimit <= 0) {
     return dueItems.sort((a, b) => b.wrong_count - a.wrong_count);
   }
 
-  const { data: existingProgress, error: progressError } = await supabase
-    .from("user_progress")
-    .select("word_id")
-    .eq("user_id", userId);
-
-  if (progressError) {
-    throw new Error(progressError.message);
-  }
-
-  const existingWordIds = new Set((existingProgress ?? []).map((row) => row.word_id));
+  const existingWordIds = await getTrackedWordIds(userId);
   const vocabulary = await getVocabularyRowsCached();
   const newWords = vocabulary.filter((word) => !existingWordIds.has(word.id)).slice(0, newLimit);
 
@@ -283,7 +291,7 @@ export async function getTodayReviewQueue(userId: string): Promise<ReviewItem[]>
     .upsert(progressRows, { onConflict: "user_id,word_id", ignoreDuplicates: true });
 
   if (insertError) {
-    throw new Error(insertError.message);
+    throwDataError("getTodayReviewQueue.insert", insertError);
   }
 
   const newItems: ReviewItem[] = newWords.map((word) => ({
@@ -334,24 +342,39 @@ export async function getVocabularyList(search?: string, page = 1, pageSize = 10
     .order("word", { ascending: true })
     .range(from, to);
 
-  if (search?.trim()) {
-    const term = `%${search.trim()}%`;
-    query = query.or(`word.ilike.${term},chinese_meaning.ilike.${term},english_definition.ilike.${term}`);
+  // Raw input must never reach .or(): PostgREST reads that string as filter
+  // syntax, so a "," or "." in the search box rewrites the query itself.
+  const filter = buildContainsFilter(["word", "chinese_meaning", "english_definition"], search ?? "");
+
+  if (filter) {
+    query = query.or(filter);
   }
 
   const { data, error, count } = await query;
 
   if (error) {
-    throw new Error(error.message);
+    throwDataError("getVocabularyList", error);
   }
 
   return { words: data ?? [], total: count ?? 0, page: safePage, pageSize };
+}
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export function isUuid(value: string): boolean {
+  return UUID_PATTERN.test(value);
 }
 
 export async function getWordDetail(
   userId: string,
   wordId: string
 ): Promise<{ word: VocabularyRow | null; progress: UserProgressRow | null }> {
+  // Postgres rejects a non-UUID with a 22P02 error, which used to surface as a
+  // 500. A malformed id simply means "no such word".
+  if (!isUuid(wordId)) {
+    return { word: null, progress: null };
+  }
+
   const supabase = await createClient();
   const [wordResult, progressResult] = await Promise.all([
     supabase.from("vocabulary").select("*").eq("id", wordId).maybeSingle(),
@@ -359,11 +382,11 @@ export async function getWordDetail(
   ]);
 
   if (wordResult.error) {
-    throw new Error(wordResult.error.message);
+    throwDataError("getWordDetail.word", wordResult.error);
   }
 
   if (progressResult.error) {
-    throw new Error(progressResult.error.message);
+    throwDataError("getWordDetail.progress", progressResult.error);
   }
 
   return {
@@ -383,7 +406,7 @@ export async function getMistakeItems(userId: string): Promise<ProgressWithWord[
     .limit(200);
 
   if (error) {
-    throw new Error(error.message);
+    throwDataError("getMistakeItems", error);
   }
 
   return (data ?? []) as ProgressWithWord[];
@@ -394,7 +417,7 @@ export async function getStats(userId: string) {
   const since = new Date();
   since.setDate(since.getDate() - 14);
 
-  const [dashboard, logsResult, progressResult, mistakesResult] = await Promise.all([
+  const [dashboard, logsResult, progressRows, mistakesResult] = await Promise.all([
     getDashboardStats(userId),
     supabase
       .from("review_logs")
@@ -402,7 +425,9 @@ export async function getStats(userId: string) {
       .eq("user_id", userId)
       .gte("review_time", since.toISOString())
       .order("review_time", { ascending: false }),
-    supabase.from("user_progress").select("*").eq("user_id", userId),
+    // Paged: an unpaged read stopped at 1000 rows and halved every mastery and
+    // familiarity figure on the Stats page.
+    getAllUserProgressRows(userId),
     supabase
       .from("user_progress")
       .select("*, vocabulary(*)")
@@ -413,21 +438,17 @@ export async function getStats(userId: string) {
   ]);
 
   if (logsResult.error) {
-    throw new Error(logsResult.error.message);
-  }
-
-  if (progressResult.error) {
-    throw new Error(progressResult.error.message);
+    throwDataError("getStats.logs", logsResult.error);
   }
 
   if (mistakesResult.error) {
-    throw new Error(mistakesResult.error.message);
+    throwDataError("getStats.mistakes", mistakesResult.error);
   }
 
   return {
     dashboard,
     recentLogs: logsResult.data ?? [],
-    progressRows: progressResult.data ?? [],
+    progressRows,
     mostMissedWords: (mistakesResult.data ?? []) as ProgressWithWord[]
   };
 }

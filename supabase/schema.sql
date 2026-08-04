@@ -36,7 +36,7 @@ create table public.user_settings (
   user_id uuid primary key references auth.users(id) on delete cascade,
   daily_new_words int not null default 20 check (daily_new_words between 0 and 200),
   daily_review_limit int not null default 100 check (daily_review_limit between 1 and 500),
-  dark_mode boolean not null default false,
+  dark_mode boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

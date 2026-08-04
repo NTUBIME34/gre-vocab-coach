@@ -1,5 +1,4 @@
 import { AppShell } from "@/components/app-shell";
-import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
