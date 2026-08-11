@@ -29,6 +29,7 @@ export function MatchGame() {
   const [message, setMessage] = useState<string | null>(null);
   const [bestSeconds, setBestSeconds] = useState<number | null>(null);
   const wrongFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const startedAtRef = useRef(0);
 
   useEffect(() => {
     setBestSeconds(readBestScore(BEST_KEY));
@@ -103,6 +104,7 @@ export function MatchGame() {
       setWrongKeys([]);
       setMistakes(0);
       setSeconds(0);
+      startedAtRef.current = Date.now();
       setStatus("playing");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "載入失敗，請再試一次。");
@@ -149,11 +151,19 @@ export function MatchGame() {
   }
 
   function finishRound() {
+    // Measured from the start timestamp rather than read off the ticking
+    // `seconds` state: the closure here can hold a value one tick stale, which
+    // let a best time be recorded a second short of the real one.
+    const elapsed = Math.max(0, Math.round((Date.now() - startedAtRef.current) / 1000));
     setStatus("done");
-    if (bestSeconds === null || seconds < bestSeconds) {
-      writeBestScore(BEST_KEY, seconds);
-      setBestSeconds(seconds);
-    }
+    setSeconds(elapsed);
+    setBestSeconds((currentBest) => {
+      if (currentBest === null || elapsed < currentBest) {
+        writeBestScore(BEST_KEY, elapsed);
+        return elapsed;
+      }
+      return currentBest;
+    });
   }
 
   return (

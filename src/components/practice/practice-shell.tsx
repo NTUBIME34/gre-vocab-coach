@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import { submitReviewAction } from "@/app/review/actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
+import { fetchJson } from "@/lib/fetch-json";
 import type { PracticeMode, PracticeQuestion, PracticeQuestionType } from "@/lib/practice";
 
 const modes: { value: PracticeMode; label: string; helper: string }[] = [
@@ -61,11 +62,10 @@ export function PracticeShell() {
         type: questionType,
         count: String(count)
       });
-      const response = await fetch(`/api/practice?${params.toString()}`);
-      const payload = (await response.json()) as { ok: boolean; message?: string; questions?: PracticeQuestion[] };
+      const payload = await fetchJson<{ questions?: PracticeQuestion[] }>(`/api/practice?${params.toString()}`);
 
       if (!payload.ok) {
-        setMessage(payload.message ?? "Could not load practice questions.");
+        setMessage(payload.message);
         return;
       }
 

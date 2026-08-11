@@ -6,12 +6,18 @@ import { createClient } from "@/lib/supabase/client";
 
 type Mode = "login" | "signup";
 
+// Supabase's own floor is 6 characters. Signup is open to anyone who finds the
+// URL, so new passwords are held to a longer minimum here; existing accounts can
+// still sign in with whatever they already have.
+const MIN_NEW_PASSWORD_LENGTH = 8;
+
 export function AuthForm() {
   const router = useRouter();
   const supabase = createClient();
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -28,6 +34,20 @@ export function AuthForm() {
       setError("Please enter both email and password.");
       setIsSubmitting(false);
       return;
+    }
+
+    if (mode === "signup") {
+      if (password.length < MIN_NEW_PASSWORD_LENGTH) {
+        setError(`Password must be at least ${MIN_NEW_PASSWORD_LENGTH} characters.`);
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        setError("The two passwords do not match.");
+        setIsSubmitting(false);
+        return;
+      }
     }
 
     if (mode === "login") {
@@ -110,9 +130,26 @@ export function AuthForm() {
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             className="mt-2 w-full rounded-md border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm outline-none ring-slate-950 dark:ring-slate-300 transition focus:ring-2 dark:text-slate-50"
-            placeholder="At least 6 characters"
+            placeholder={mode === "signup" ? `At least ${MIN_NEW_PASSWORD_LENGTH} characters` : "Your password"}
           />
         </div>
+
+        {mode === "signup" ? (
+          <div>
+            <label htmlFor="confirm-password" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              Confirm password
+            </label>
+            <input
+              id="confirm-password"
+              type="password"
+              autoComplete="new-password"
+              value={confirmPassword}
+              onChange={(event) => setConfirmPassword(event.target.value)}
+              className="mt-2 w-full rounded-md border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm outline-none ring-slate-950 dark:ring-slate-300 transition focus:ring-2 dark:text-slate-50"
+              placeholder="Re-enter your password"
+            />
+          </div>
+        ) : null}
 
         {error ? <p className="rounded-md bg-rose-50 dark:bg-rose-950 px-3 py-2 text-sm text-rose-700 dark:text-rose-300">{error}</p> : null}
         {message ? <p className="rounded-md bg-emerald-50 dark:bg-emerald-950 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-300">{message}</p> : null}
@@ -134,6 +171,7 @@ export function AuthForm() {
             setMode(mode === "login" ? "signup" : "login");
             setError(null);
             setMessage(null);
+            setConfirmPassword("");
           }}
           className="font-medium text-slate-950 dark:text-slate-50 underline-offset-4 hover:underline"
         >

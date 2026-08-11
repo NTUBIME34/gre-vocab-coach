@@ -24,22 +24,25 @@ export async function POST(request: Request) {
   const normalized = query.toLowerCase();
   // ,.()%*\"' all carry meaning inside a PostgREST or() filter -- stripped centrally.
   const filter = buildContainsFilter(["word", "chinese_meaning", "english_definition"], query);
-  const exactResult = await supabase.from("vocabulary").select("*").eq("normalized_word", normalized).maybeSingle();
+  // Independent queries, so they go out together instead of costing two serial
+  // round trips on every lookup.
+  const [exactResult, suggestionsResult] = await Promise.all([
+    supabase.from("vocabulary").select("*").eq("normalized_word", normalized).maybeSingle(),
+    filter
+      ? supabase
+          .from("vocabulary")
+          .select("*")
+          .or(filter)
+          .order("frequency_level", { ascending: false })
+          .order("word", { ascending: true })
+          .limit(12)
+      : Promise.resolve({ data: [], error: null })
+  ]);
 
   if (exactResult.error) {
     console.error("[api:dictionary.exact]", exactResult.error.message);
     return NextResponse.json({ ok: false, message: "Dictionary lookup failed." }, { status: 500 });
   }
-
-  const suggestionsResult = filter
-    ? await supabase
-        .from("vocabulary")
-        .select("*")
-        .or(filter)
-        .order("frequency_level", { ascending: false })
-        .order("word", { ascending: true })
-        .limit(12)
-    : { data: [], error: null };
 
   if (suggestionsResult.error) {
     console.error("[api:dictionary.suggestions]", suggestionsResult.error.message);

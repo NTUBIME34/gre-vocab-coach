@@ -2,6 +2,9 @@
 
 import { FormEvent, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { fetchJson } from "@/lib/fetch-json";
+
+type ImportResult = { imported: number; skippedDuplicates: number; progressCreated: number };
 
 export function CsvImportForm() {
   const [message, setMessage] = useState<string | null>(null);
@@ -12,15 +15,13 @@ export function CsvImportForm() {
     setMessage(null);
     setIsSubmitting(true);
     const formData = new FormData(event.currentTarget);
-    const response = await fetch("/api/import", {
-      method: "POST",
-      body: formData
-    });
-    const result = await response.json();
+    // fetchJson never throws: a network error or an HTML response used to leave
+    // isSubmitting stuck at true with nothing on screen.
+    const result = await fetchJson<ImportResult>("/api/import", { method: "POST", body: formData });
     setIsSubmitting(false);
 
-    if (!response.ok || !result.ok) {
-      setMessage(result.message ?? "Import failed.");
+    if (!result.ok) {
+      setMessage(result.message);
       return;
     }
 

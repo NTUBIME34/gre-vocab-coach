@@ -5,6 +5,14 @@ import type { Database } from "@/types/database";
 type VocabularyRow = Database["public"]["Tables"]["vocabulary"]["Row"];
 
 // Module-level cache of the full (shared, rarely-changing) vocabulary table.
+//
+// SAFETY PRECONDITION: these rows are cached across users on a warm lambda, but
+// they are fetched with whichever request's cookie client happened to miss the
+// cache. That is only sound because `vocabulary` is readable by every
+// authenticated user (see schema.sql -- one shared word bank, no per-user rows).
+// If vocabulary ever gains per-user visibility, this cache leaks one user's rows
+// to another, silently. Move it to the service-role client and filter per
+// request, or drop the cache, before making that change.
 // Fetching it costs 3 sequential paginated round trips, and both the practice
 // generator and the daily new-word queue need the whole list. 60s TTL keeps a
 // freshly imported CSV discoverable within a minute even on lambda instances

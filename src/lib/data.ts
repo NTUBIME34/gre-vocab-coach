@@ -3,6 +3,7 @@ import { throwDataError } from "@/lib/errors";
 import { planDailyQueue } from "@/lib/queue-plan";
 import { summarizeReviewLogs, type ReviewLogSample } from "@/lib/review-stats";
 import { buildContainsFilter } from "@/lib/search";
+import { startOfLocalDay } from "@/lib/time";
 import { fetchAllPages } from "@/lib/supabase/paginate";
 import { createClient } from "@/lib/supabase/server";
 import { getVocabularyRowsCached } from "@/lib/vocab-cache";
@@ -65,8 +66,10 @@ export async function getCurrentUser() {
 
 export async function getDashboardStats(userId: string): Promise<DashboardStats> {
   const supabase = await createClient();
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  // The learner's midnight, not the server's. Vercel runs in UTC regardless of
+  // region, so this used to roll over at 8am Taipei time and disagree with the
+  // Stats chart, which always bucketed locally.
+  const today = startOfLocalDay(new Date());
   const settings = await getUserSettings(userId);
 
   const [

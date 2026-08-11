@@ -1,5 +1,6 @@
 "use server";
 
+import { z } from "zod";
 import { isUuid } from "@/lib/data";
 import { safeErrorMessage } from "@/lib/errors";
 import { buildUserProgressUpdate, calculateNextReview } from "@/lib/srs";
@@ -14,7 +15,33 @@ export type SubmitReviewInput = {
   confidenceLevel?: number;
 };
 
-export async function submitReviewAction(input: SubmitReviewInput) {
+// TypeScript types vanish at runtime, so everything here arrived unchecked. The
+// DB's enum and check constraints caught the worst of it, but as a 500 rather
+// than a clear error -- and reviewMode is worse than a data question: it decides
+// `recognitionOnly`, so a client claiming "flashcard" for a multiple-choice
+// answer gets the 2x interval and can fast-track a word to mastered it never
+// really earned. The whitelist below is what makes that impossible.
+const MAX_RESPONSE_TIME_MS = 10 * 60 * 1000;
+
+const submitReviewSchema = z.object({
+  wordId: z.string().refine(isUuid, "Unknown word."),
+  rating: z.enum(["again", "hard", "good", "easy"]),
+  reviewMode: z
+    .enum([
+      "flashcard",
+      "en_to_zh",
+      "zh_to_en",
+      "mistake_review",
+      "practice_definition",
+      "practice_chinese",
+      "practice_cloze"
+    ])
+    .optional(),
+  responseTime: z.number().int().min(0).max(MAX_RESPONSE_TIME_MS).optional(),
+  confidenceLevel: z.number().int().min(1).max(5).optional()
+});
+
+export async function submitReviewAction(rawInput: SubmitReviewInput) {
   const supabase = await createClient();
   const {
     data: { user }
@@ -24,9 +51,13 @@ export async function submitReviewAction(input: SubmitReviewInput) {
     return { ok: false, message: "Please sign in before reviewing." };
   }
 
-  if (!isUuid(input.wordId)) {
-    return { ok: false, message: "Unknown word." };
+  const parsed = submitReviewSchema.safeParse(rawInput);
+
+  if (!parsed.success) {
+    return { ok: false, message: "That review could not be recorded (invalid input)." };
   }
+
+  const input = parsed.data;
 
   const { data: progress, error: progressError } = await supabase
     .from("user_progress")

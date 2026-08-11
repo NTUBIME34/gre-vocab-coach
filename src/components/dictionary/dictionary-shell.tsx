@@ -4,6 +4,7 @@ import { FormEvent, useState, useTransition } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
+import { fetchJson } from "@/lib/fetch-json";
 
 type DictionaryEntry = {
   id: string;
@@ -43,20 +44,17 @@ export function DictionaryShell() {
     setQuery(trimmed);
     setMessage(null);
     startTransition(async () => {
-      const response = await fetch("/api/dictionary", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: trimmed })
-      });
-      const payload = (await response.json()) as {
-        ok: boolean;
-        message?: string;
-        result?: DictionaryEntry | null;
-        suggestions?: DictionaryEntry[];
-      };
+      const payload = await fetchJson<{ result?: DictionaryEntry | null; suggestions?: DictionaryEntry[] }>(
+        "/api/dictionary",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query: trimmed })
+        }
+      );
 
       if (!payload.ok) {
-        setMessage(payload.message ?? "Dictionary lookup failed.");
+        setMessage(payload.message);
         return;
       }
 

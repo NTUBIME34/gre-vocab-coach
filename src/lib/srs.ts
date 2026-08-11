@@ -75,6 +75,13 @@ export function calculateNextReview(input: ReviewProgressInput): ReviewProgressR
     };
   }
 
+  // "Hard" deliberately increments wrongCount, unlike classic SRS where only
+  // "Again" is a lapse. wrongCount here is the app's weak-word signal: it drives
+  // the Mistakes list and Practice's wrong mode, and a word you only just dragged
+  // out of memory belongs in both. The UI says so explicitly ("Words you have
+  // marked Again or Hard"), and Stats counts accuracy as Good+Easy for the same
+  // reason. Changing this would quietly empty the weak-word list of exactly the
+  // words worth drilling.
   if (input.rating === "hard") {
     return {
       familiarityLevel: 2,

@@ -1,3 +1,4 @@
+import { APP_TIME_ZONE, localDateKey } from "@/lib/time";
 import type { ReviewRating } from "@/types/database";
 
 export type ReviewLogSample = {
@@ -20,16 +21,10 @@ const RATINGS: ReviewRating[] = ["again", "hard", "good", "easy"];
 
 // Reviews are bucketed by the learner's local day, not UTC. Studying at 1am in
 // Taipei is 5pm UTC the day before, which would otherwise land on the wrong bar.
-const DEFAULT_TIME_ZONE = "Asia/Taipei";
+// Shared with the dashboard's "today" so the two never disagree again.
+const DEFAULT_TIME_ZONE = APP_TIME_ZONE;
 
-function dateKey(date: Date, timeZone: string): string {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit"
-  }).format(date);
-}
+const dateKey = localDateKey;
 
 export function summarizeReviewLogs(
   rows: ReviewLogSample[],

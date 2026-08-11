@@ -1,14 +1,16 @@
+import { fetchJson } from "@/lib/fetch-json";
 import type { PracticeQuestion } from "@/lib/practice";
 
 // Both games draw from the same smart pool as Practice, so game rounds are
 // built from due, weak, and high-value words instead of random ones.
 export async function fetchSmartQuestions(count: number): Promise<PracticeQuestion[]> {
   const params = new URLSearchParams({ mode: "smart", type: "chinese", count: String(count) });
-  const response = await fetch(`/api/practice?${params.toString()}`, { cache: "no-store" });
-  const payload = (await response.json()) as { ok: boolean; message?: string; questions?: PracticeQuestion[] };
+  const payload = await fetchJson<{ questions?: PracticeQuestion[] }>(`/api/practice?${params.toString()}`, {
+    cache: "no-store"
+  });
 
   if (!payload.ok) {
-    throw new Error(payload.message ?? "Could not load game words.");
+    throw new Error(payload.message);
   }
 
   return payload.questions ?? [];

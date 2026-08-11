@@ -19,6 +19,16 @@ jobs:
       - run: npx tsc --noEmit
       - run: npx vitest run
       - run: npx eslint .
+
+      # Blocking on critical only. The one outstanding high is sharp's libvips
+      # CVEs, reachable solely through next/image; this app serves no
+      # user-supplied images and clearing it means a major Next upgrade. New
+      # highs still show up in the non-blocking step below.
+      - name: Audit (blocking on critical)
+        run: npm audit --omit=dev --audit-level=critical
+      - name: Audit (report highs)
+        run: npm audit --omit=dev --audit-level=high
+        continue-on-error: true
       - run: npx next build
         env:
           # Every page is dynamic, so the build never calls Supabase -- these only

@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { isAdminUser } from "@/lib/admin";
-import { requireUser } from "@/lib/auth";
-import { getTrackedWordIds } from "@/lib/data";
+import { getTrackedWordIds, getUserSettings } from "@/lib/data";
 import { parseVocabularyCsv, splitCsvList } from "@/lib/import/parse-vocabulary-csv";
+import { staggeredDueDate } from "@/lib/queue-plan";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { chunkRows, writeInChunks } from "@/lib/supabase/batch";
 import { fetchAllPages } from "@/lib/supabase/paginate";
 import { createClient } from "@/lib/supabase/server";
+import { startOfLocalDay } from "@/lib/time";
 import { invalidateVocabularyCache } from "@/lib/vocab-cache";
 
 const MAX_UPLOAD_BYTES = 2 * 1024 * 1024;
@@ -16,7 +17,18 @@ function normalizeWord(word: string) {
 }
 
 export async function POST(request: Request) {
-  const user = await requireUser();
+  const supabase = await createClient();
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
+
+  // 401 JSON, not requireUser()'s redirect: a redirect makes the browser follow
+  // through to the login page's HTML, and the caller's response.json() throws on
+  // it -- leaving the import form spinning with no message. The other API routes
+  // already answer this way.
+  if (!user) {
+    return NextResponse.json({ ok: false, message: "Please sign in before importing." }, { status: 401 });
+  }
 
   // `vocabulary` is one shared table for every account and this route writes to
   // it with the service-role client, which bypasses RLS. Signup is open, so
@@ -26,7 +38,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, message: "This account cannot import vocabulary." }, { status: 403 });
   }
 
-  const supabase = await createClient();
   const adminSupabase = createAdminClient();
   const formData = await request.formData();
   const file = formData.get("file");
@@ -112,19 +123,25 @@ export async function POST(request: Request) {
 
   const allWordIds = [...existingByWord.values(), ...insertedWordIds];
   let existingProgressIds: Set<string>;
+  let settings;
   try {
-    existingProgressIds = await getTrackedWordIds(user.id);
+    [existingProgressIds, settings] = await Promise.all([getTrackedWordIds(user.id), getUserSettings(user.id)]);
   } catch (error) {
     console.error("[api:import.progress]", error);
     return NextResponse.json({ ok: false, message: "Could not read your progress rows." }, { status: 500 });
   }
 
+  // Same drip as initializeUserProgressAction. Dating every imported word "now"
+  // made the whole batch due at once; the daily cap still limited the workload,
+  // but the queue orders by next_review_at, so a flat timestamp destroyed the
+  // highest-frequency-first order the import is supposed to preserve.
+  const startOfToday = startOfLocalDay(new Date());
   const progressRows = allWordIds
     .filter((wordId) => !existingProgressIds.has(wordId))
-    .map((wordId) => ({
+    .map((wordId, index) => ({
       user_id: user.id,
       word_id: wordId,
-      next_review_at: new Date().toISOString()
+      next_review_at: staggeredDueDate(index, settings.daily_new_words, startOfToday).toISOString()
     }));
 
   if (progressRows.length) {
@@ -134,7 +151,13 @@ export async function POST(request: Request) {
 
     if (progressInsertError) {
       console.error("[api:import.progressInsert]", progressInsertError.message);
-      return NextResponse.json({ ok: false, message: "Could not create your progress rows." }, { status: 500 });
+      return NextResponse.json(
+        {
+          ok: false,
+          message: "Words were imported but some progress rows failed. Re-run the import to finish; it skips duplicates."
+        },
+        { status: 500 }
+      );
     }
   }
 

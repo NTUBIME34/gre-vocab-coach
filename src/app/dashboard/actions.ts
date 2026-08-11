@@ -7,6 +7,7 @@ import { safeErrorMessage } from "@/lib/errors";
 import { staggeredDueDate } from "@/lib/queue-plan";
 import { writeInChunks } from "@/lib/supabase/batch";
 import { createClient } from "@/lib/supabase/server";
+import { startOfLocalDay } from "@/lib/time";
 
 export async function initializeUserProgressAction() {
   const user = await requireUser();
@@ -36,8 +37,7 @@ export async function initializeUserProgressAction() {
   // Dating every new row "now" would dump the whole book into today's queue and
   // flatten the schedule. getAllVocabularyRows is ordered highest-frequency
   // first, so the drip introduces the highest-value words earliest.
-  const startOfToday = new Date();
-  startOfToday.setHours(0, 0, 0, 0);
+  const startOfToday = startOfLocalDay(new Date());
   const rowsToInsert = missingWords.map((word, index) => ({
     user_id: user.id,
     word_id: word.id,
