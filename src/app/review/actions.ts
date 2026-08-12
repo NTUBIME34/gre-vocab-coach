@@ -1,8 +1,7 @@
 "use server";
 
-import { z } from "zod";
-import { isUuid } from "@/lib/data";
 import { safeErrorMessage } from "@/lib/errors";
+import { isRecognitionOnly, reviewInputSchema } from "@/lib/review-input";
 import { buildUserProgressUpdate, calculateNextReview } from "@/lib/srs";
 import { createClient } from "@/lib/supabase/server";
 import type { ReviewMode, ReviewRating } from "@/types/database";
@@ -15,32 +14,6 @@ export type SubmitReviewInput = {
   confidenceLevel?: number;
 };
 
-// TypeScript types vanish at runtime, so everything here arrived unchecked. The
-// DB's enum and check constraints caught the worst of it, but as a 500 rather
-// than a clear error -- and reviewMode is worse than a data question: it decides
-// `recognitionOnly`, so a client claiming "flashcard" for a multiple-choice
-// answer gets the 2x interval and can fast-track a word to mastered it never
-// really earned. The whitelist below is what makes that impossible.
-const MAX_RESPONSE_TIME_MS = 10 * 60 * 1000;
-
-const submitReviewSchema = z.object({
-  wordId: z.string().refine(isUuid, "Unknown word."),
-  rating: z.enum(["again", "hard", "good", "easy"]),
-  reviewMode: z
-    .enum([
-      "flashcard",
-      "en_to_zh",
-      "zh_to_en",
-      "mistake_review",
-      "practice_definition",
-      "practice_chinese",
-      "practice_cloze"
-    ])
-    .optional(),
-  responseTime: z.number().int().min(0).max(MAX_RESPONSE_TIME_MS).optional(),
-  confidenceLevel: z.number().int().min(1).max(5).optional()
-});
-
 export async function submitReviewAction(rawInput: SubmitReviewInput) {
   const supabase = await createClient();
   const {
@@ -51,7 +24,9 @@ export async function submitReviewAction(rawInput: SubmitReviewInput) {
     return { ok: false, message: "Please sign in before reviewing." };
   }
 
-  const parsed = submitReviewSchema.safeParse(rawInput);
+  // Only an unusable wordId or rating can fail here; odd telemetry is dropped by
+  // the schema rather than costing the learner their rating. See review-input.ts.
+  const parsed = reviewInputSchema.safeParse(rawInput);
 
   if (!parsed.success) {
     return { ok: false, message: "That review could not be recorded (invalid input)." };
@@ -91,7 +66,7 @@ export async function submitReviewAction(rawInput: SubmitReviewInput) {
     correctCount: currentProgress.correct_count,
     wrongCount: currentProgress.wrong_count,
     rating: input.rating,
-    recognitionOnly: input.reviewMode?.startsWith("practice_") ?? false
+    recognitionOnly: isRecognitionOnly(input.reviewMode)
   });
 
   const updatePayload = buildUserProgressUpdate(nextReview);
